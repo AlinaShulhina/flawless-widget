@@ -12,9 +12,11 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="uk_UA">
+  <meta property="og:url" content="https://YOUR-DOMAIN/">
   <meta property="og:title" content="Потік монет — планування особистого бюджету">
   <meta property="og:description" content="Наочний симулятор заощаджень, що моделює ваш капітал у реальному часі.">
   <meta property="og:image" content="https://YOUR-DOMAIN/assets/og.png">
+  <meta name="twitter:card" content="summary_large_image">
 
   <!-- Збірка: npx @tailwindcss/cli -i styles/style.css -o styles/output.css --minify -->
   <!-- Бібліотеки закріплені на точних версіях. Краще встановити їх через npm і підключити локально.
@@ -28,7 +30,7 @@
   <script src="https://cdn.jsdelivr.net/npm/swiper@11.1.14/swiper-bundle.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.umd.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12" defer></script>
-  <script src="js/main.js" defer></script>
+  <script src="js/widget.js" defer></script>
   <script src="js/validation.js" defer></script>
   <script src="js/gallery.js" defer></script>
 </head>
@@ -104,134 +106,311 @@
       </div>
     </section>
 
-    <!-- СИМУЛЯТОР (border-t відділяє його від білого hero) -->
-    <section id="calculator" aria-labelledby="calc-title" class="section border-t border-line bg-white">
-      <div class="wrap">
-        <p class="pill">Калькулятор</p>
-        <h2 id="calc-title" class="text-center text-h2">Симулятор заощаджень</h2>
-        <p class="mx-auto mt-3 max-w-2xl text-center text-muted">Рухайте повзунки й одразу бачте, скільки накопичите.</p>
+    <section id="calculator" class="section" aria-labelledby="sim-title" data-savings-sim data-sim-id="main" data-sync-url>
+  <div class="wrap">
 
-        <form id="sim" class="mt-8 overflow-x-clip rounded-calc border border-line bg-white p-5 shadow-card md:p-8" novalidate>
-          <div role="tablist" aria-label="Кроки симулятора" class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            <button type="button" role="tab" id="tab-0" aria-controls="panel-0" aria-selected="true" tabindex="0" class="tab">Дохід</button>
-            <button type="button" role="tab" id="tab-1" aria-controls="panel-1" aria-selected="false" tabindex="-1" class="tab">Витрати</button>
-            <button type="button" role="tab" id="tab-2" aria-controls="panel-2" aria-selected="false" tabindex="-1" class="tab">Відсоток</button>
-            <button type="button" role="tab" id="tab-3" aria-controls="panel-3" aria-selected="false" tabindex="-1" class="tab">Періодичність</button>
-            <button type="button" role="tab" id="tab-4" aria-controls="panel-4" aria-selected="false" tabindex="-1" class="tab">Роки</button>
-            <button type="button" role="tab" id="tab-5" aria-controls="panel-5" aria-selected="false" tabindex="-1" class="tab">Результат</button>
-          </div>
+    <!-- Заголовок блоку -->
+    <header class="mx-auto mb-10 max-w-3xl text-center">
+      <p class="pill">Симулятор заощаджень</p>
+      <h2 id="sim-title" class="text-h2">Дізнайтеся, скільки вдасться відкласти</h2>
+      <p class="mt-4 text-muted">Рухайте повзунки й одразу бачте, скільки накопичите.</p>
+    </header>
 
-          <div role="tabpanel" id="panel-0" aria-labelledby="tab-0" class="mt-8 space-y-6">
-            <div>
-              <div class="slider-head">
-                <label for="income" class="font-medium text-ink-blue">Ваш дохід</label>
-                <output id="income-out" for="income" aria-live="off" class="out"></output>
-              </div>
-              <input id="income" name="income" type="range" min="5000" max="300000" step="1000" value="40000" class="range">
-              <div class="flex justify-between text-sm text-muted"><span>5 000 ₴</span><span>300 000 ₴</span></div>
-            </div>
-            <fieldset>
-              <legend class="font-medium text-ink-blue">Як рахувати дохід</legend>
-              <div class="mt-2 grid max-w-md grid-cols-2 gap-2">
-                <label class="relative"><input class="peer sr-only" type="radio" name="incomePeriod" value="month" checked><span class="choice">На місяць</span></label>
-                <label class="relative"><input class="peer sr-only" type="radio" name="incomePeriod" value="year"><span class="choice">На рік</span></label>
-              </div>
-            </fieldset>
-            <button type="button" data-next aria-label="Далі: витрати" class="btn">Далі <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
-          </div>
+    <div id="sim-wizard" class="card mx-auto max-w-5xl">
 
-          <div role="tabpanel" id="panel-1" aria-labelledby="tab-1" hidden class="mt-8 space-y-6">
-            <div>
-              <div class="slider-head">
-                <label for="expenses" class="font-medium text-ink-blue">Ваші витрати</label>
-                <output id="expenses-out" for="expenses" aria-live="off" class="out"></output>
-              </div>
-              <input id="expenses" name="expenses" type="range" min="0" max="250000" step="1000" value="28000" class="range">
-              <div class="flex justify-between text-sm text-muted"><span>0 ₴</span><span>250 000 ₴</span></div>
-            </div>
-            <p id="expenses-note" class="text-muted"></p>
-            <button type="button" data-next aria-label="Далі: відсоток" class="btn">Далі <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
-          </div>
-
-          <div role="tabpanel" id="panel-2" aria-labelledby="tab-2" hidden class="mt-8 space-y-6">
-            <div>
-              <div class="slider-head">
-                <label for="rate" class="font-medium text-ink-blue">Річний відсоток</label>
-                <output id="rate-out" for="rate" aria-live="off" class="out"></output>
-              </div>
-              <input id="rate" name="rate" type="range" min="0" max="30" step="0.5" value="12" class="range">
-              <div class="flex justify-between text-sm text-muted"><span>0 %</span><span>30 %</span></div>
-            </div>
-            <button type="button" data-next aria-label="Далі: періодичність" class="btn">Далі <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
-          </div>
-
-          <div role="tabpanel" id="panel-3" aria-labelledby="tab-3" hidden class="mt-8 space-y-6">
-            <fieldset>
-              <legend class="font-medium text-ink-blue">Як часто ви відкладаєте</legend>
-              <div class="mt-2 grid max-w-md grid-cols-2 gap-2">
-                <label class="relative"><input class="peer sr-only" type="radio" name="savePeriod" value="month" checked><span class="choice">Щомісяця</span></label>
-                <label class="relative"><input class="peer sr-only" type="radio" name="savePeriod" value="year"><span class="choice">Щороку</span></label>
-              </div>
-            </fieldset>
-            <p class="text-muted">Щороку означає один внесок на початку кожного року на суму 12 місячних заощаджень.</p>
-            <button type="button" data-next aria-label="Далі: роки" class="btn">Далі <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
-          </div>
-
-          <div role="tabpanel" id="panel-4" aria-labelledby="tab-4" hidden class="mt-8 space-y-6">
-            <div>
-              <div class="slider-head">
-                <label for="duration" class="font-medium text-ink-blue">Тривалість</label>
-                <output id="duration-out" for="duration" aria-live="off" class="out"></output>
-              </div>
-              <input id="duration" name="duration" type="range" min="1" max="30" step="1" value="10" class="range">
-              <div class="flex justify-between text-sm text-muted"><span>1</span><span>30</span></div>
-            </div>
-            <fieldset>
-              <legend class="font-medium text-ink-blue">Одиниця</legend>
-              <div class="mt-2 grid max-w-md grid-cols-2 gap-2">
-                <label class="relative"><input class="peer sr-only" type="radio" name="durUnit" value="years" checked><span class="choice">Роки</span></label>
-                <label class="relative"><input class="peer sr-only" type="radio" name="durUnit" value="months"><span class="choice">Місяці</span></label>
-              </div>
-            </fieldset>
-            <button type="button" data-next aria-label="Далі: результат" class="btn">Далі <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
-          </div>
-
-          <div role="tabpanel" id="panel-5" aria-labelledby="tab-5" hidden class="mt-8">
-            <h3 class="sr-only">Результат симуляції</h3>
-            <div class="grid items-center gap-8 lg:grid-cols-2">
-              <div class="min-w-0">
-                <p id="res-headline" class="font-medium text-ink-blue"></p>
-                <p id="res-total" class="mt-1 break-words font-heading text-figure font-bold text-action"></p>
-                <dl class="mt-6 grid gap-3 xl:grid-cols-2">
-                  <div class="stat"><dt>Власні заощадження</dt><dd id="res-own"></dd></div>
-                  <div class="stat"><dt>Відсотки</dt><dd id="res-interest"></dd></div>
-                </dl>
-                <p id="res-note" class="mt-3 text-muted"></p>
-                <div class="mt-6 grid gap-3 sm:grid-cols-2">
-                  <a href="#signup" class="btn sm:col-span-2">Створити план <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg></a>
-                  <button type="button" id="btn-save" class="btn btn-ghost"><svg class="ico" aria-hidden="true"><use href="#i-save"/></svg>Зберегти</button>
-                  <button type="button" id="btn-share" class="btn btn-ghost"><svg class="ico" aria-hidden="true"><use href="#i-share"/></svg>Поділитись</button>
-                </div>
-                <p class="mt-3 text-sm text-muted">«Зберегти» запам'ятовує прогноз лише в цьому браузері. Акаунт збереже сценарії на всіх пристроях.</p>
-                <p id="sim-status" class="status mt-3" role="status"></p>
-              </div>
-              <div class="rounded-card border border-line bg-page p-3 md:p-4">
-                <svg id="chart" viewBox="0 0 600 240" class="h-auto w-full" role="img" aria-labelledby="chart-title chart-desc">
-                  <title id="chart-title">Графік зростання капіталу</title>
-                  <desc id="chart-desc">Лінія показує, як зростають накопичення від старту до кінця обраного терміну. Підсумкову суму наведено текстом поруч.</desc>
-                  <line x1="0" y1="220" x2="600" y2="220" class="stroke-line-strong" stroke-width="1" vector-effect="non-scaling-stroke"/>
-                  <path id="chart-area" d="" class="fill-action/15"/>
-                  <path id="chart-line" d="" class="fill-none stroke-action" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-                </svg>
-                <div class="mt-1 flex justify-between text-xs text-muted" aria-hidden="true"><span>Старт</span><span id="chart-end"></span></div>
-              </div>
-            </div>
-          </div>
-
-          <div id="sim-live" class="sr-only" aria-live="polite"></div>
-        </form>
+      <!-- Вкладки-кроки: наступна відкривається після завершення попередньої -->
+      <div id="sim-tablist" class="grid grid-cols-3 gap-2 sm:grid-cols-6" role="tablist" aria-label="Кроки симулятора">
+        <button id="sim-tab-1" class="tab not-aria-selected:data-[done]:text-action data-[done]:before:mr-1.5 data-[done]:before:content-['✓'] disabled:cursor-not-allowed disabled:opacity-50" type="button" role="tab" data-step="1" aria-selected="true" aria-controls="sim-step-1">Дохід</button>
+        <button id="sim-tab-2" class="tab not-aria-selected:data-[done]:text-action data-[done]:before:mr-1.5 data-[done]:before:content-['✓'] disabled:cursor-not-allowed disabled:opacity-50" type="button" role="tab" data-step="2" aria-selected="false" aria-controls="sim-step-2" tabindex="-1" disabled>Витрати</button>
+        <button id="sim-tab-3" class="tab not-aria-selected:data-[done]:text-action data-[done]:before:mr-1.5 data-[done]:before:content-['✓'] disabled:cursor-not-allowed disabled:opacity-50" type="button" role="tab" data-step="3" aria-selected="false" aria-controls="sim-step-3" tabindex="-1" disabled>Відсоток</button>
+        <button id="sim-tab-4" class="tab not-aria-selected:data-[done]:text-action data-[done]:before:mr-1.5 data-[done]:before:content-['✓'] disabled:cursor-not-allowed disabled:opacity-50" type="button" role="tab" data-step="4" aria-selected="false" aria-controls="sim-step-4" tabindex="-1" disabled>Періодичність</button>
+        <button id="sim-tab-5" class="tab not-aria-selected:data-[done]:text-action data-[done]:before:mr-1.5 data-[done]:before:content-['✓'] disabled:cursor-not-allowed disabled:opacity-50" type="button" role="tab" data-step="5" aria-selected="false" aria-controls="sim-step-5" tabindex="-1" disabled>Роки</button>
+        <button id="sim-tab-6" class="tab not-aria-selected:data-[done]:text-action data-[done]:before:mr-1.5 data-[done]:before:content-['✓'] disabled:cursor-not-allowed disabled:opacity-50" type="button" role="tab" data-step="6" aria-selected="false" aria-controls="sim-step-6" tabindex="-1" disabled>Результат</button>
       </div>
-    </section>
+
+      <!-- ===== КРОКИ 1–5 ===== -->
+      <form id="sim-form" class="mt-6" novalidate>
+
+        <!-- Крок 1. Дохід -->
+        <section id="sim-step-1" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-1" tabindex="0">
+          <div id="sim-income-group">
+            <div class="slider-head">
+              <label id="sim-income-label" class="label" for="sim-income-range">Ваш дохід</label>
+              <output id="sim-income-out" class="out" for="sim-income-range sim-income-number">40 000 ₴ на місяць</output>
+            </div>
+            <input id="sim-income-range" class="range" type="range" name="income" min="5000" max="300000" step="500" value="40000"
+                   aria-describedby="sim-step-1-desc sim-income-err" aria-valuetext="40 000 гривень на місяць">
+            <div class="flex justify-between text-sm text-muted" aria-hidden="true">
+              <span id="sim-income-min">5 000 ₴</span>
+              <span id="sim-income-max">300 000 ₴</span>
+            </div>
+            <label class="label mt-4 block" for="sim-income-number">Або введіть точну суму, ₴</label>
+            <input id="sim-income-number" class="field aria-invalid:border-danger! aria-invalid:bg-danger/5 aria-invalid:ring-2 aria-invalid:ring-danger/25 focus:aria-invalid:ring-danger/50" type="number" inputmode="numeric" min="5000" max="300000" step="500" value="40000"
+                   aria-describedby="sim-step-1-desc sim-income-err">
+            <p id="sim-income-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" aria-live="polite" hidden></p>
+            <p id="sim-step-1-desc" class="hint">Середній дохід, який ви отримуєте.</p>
+          </div>
+
+          <fieldset id="sim-unit-income-group" class="sim-unit min-w-0">
+            <legend class="label mb-3">Як рахувати дохід</legend>
+            <div class="grid max-w-sm grid-cols-2 gap-2">
+              <div class="relative">
+                <input id="sim-unit-income-month" class="peer sr-only" type="radio" name="unit-income" value="month" checked>
+                <label for="sim-unit-income-month" class="choice">На місяць</label>
+              </div>
+              <div class="relative">
+                <input id="sim-unit-income-year" class="peer sr-only" type="radio" name="unit-income" value="year">
+                <label for="sim-unit-income-year" class="choice">На рік</label>
+              </div>
+            </div>
+          </fieldset>
+        </section>
+
+        <!-- Крок 2. Витрати -->
+        <section id="sim-step-2" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-2" tabindex="0" hidden>
+          <div id="sim-expenses-group">
+            <div class="slider-head">
+              <label id="sim-expenses-label" class="label" for="sim-expenses-range">Ваші витрати</label>
+              <output id="sim-expenses-out" class="out" for="sim-expenses-range sim-expenses-number">22 000 ₴ на місяць</output>
+            </div>
+            <input id="sim-expenses-range" class="range" type="range" name="expenses" min="0" max="40000" step="500" value="22000"
+                   aria-describedby="sim-step-2-desc sim-expenses-hint sim-expenses-err" aria-valuetext="22 000 гривень на місяць">
+            <div class="flex justify-between text-sm text-muted" aria-hidden="true">
+              <span id="sim-expenses-min">0 ₴</span>
+              <span id="sim-expenses-max">40 000 ₴</span>
+            </div>
+            <label class="label mt-4 block" for="sim-expenses-number">Або введіть точну суму, ₴</label>
+            <input id="sim-expenses-number" class="field aria-invalid:border-danger! aria-invalid:bg-danger/5 aria-invalid:ring-2 aria-invalid:ring-danger/25 focus:aria-invalid:ring-danger/50" type="number" inputmode="numeric" min="0" max="40000" step="500" value="22000"
+                   aria-describedby="sim-expenses-hint sim-expenses-err">
+            <p id="sim-expenses-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" aria-live="polite" hidden></p>
+            <p id="sim-step-2-desc" class="hint">Житло, їжа, транспорт, підписки та інші регулярні витрати.</p>
+            <p id="sim-expenses-hint" class="hint">Вільний залишок: <span id="sim-free-out" class="font-semibold text-navy">18 000 ₴ на місяць</span></p>
+          </div>
+
+          <fieldset id="sim-unit-expenses-group" class="sim-unit min-w-0">
+            <legend class="label mb-3">Як рахувати витрати</legend>
+            <div class="grid max-w-sm grid-cols-2 gap-2">
+              <div class="relative">
+                <input id="sim-unit-expenses-month" class="peer sr-only" type="radio" name="unit-expenses" value="month" checked>
+                <label for="sim-unit-expenses-month" class="choice">На місяць</label>
+              </div>
+              <div class="relative">
+                <input id="sim-unit-expenses-year" class="peer sr-only" type="radio" name="unit-expenses" value="year">
+                <label for="sim-unit-expenses-year" class="choice">На рік</label>
+              </div>
+            </div>
+            <p id="sim-unit-hint" class="hint mt-2">Період спільний для доходу й витрат.</p>
+          </fieldset>
+        </section>
+
+        <!-- Крок 3. Відсоток заощадження -->
+        <section id="sim-step-3" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-3" tabindex="0" hidden>
+          <div id="sim-percent-group">
+            <div class="slider-head">
+              <label id="sim-percent-label" class="label" for="sim-percent-range">Яку частину залишку відкладати</label>
+              <output id="sim-percent-out" class="out" for="sim-percent-range">20%</output>
+            </div>
+            <input id="sim-percent-range" class="range" type="range" name="percent" min="0" max="100" step="1" value="20"
+                   aria-describedby="sim-step-3-desc sim-percent-hint sim-percent-err" aria-valuetext="20 відсотків">
+            <div class="flex justify-between text-sm text-muted" aria-hidden="true">
+              <span id="sim-percent-min">0%</span>
+              <span id="sim-percent-max">100%</span>
+            </div>
+            <div id="sim-percent-chips" class="mt-4 flex flex-wrap gap-2" role="group" aria-label="Швидкий вибір відсотка">
+              <button id="sim-percent-chip-10" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="percent" data-value="10" aria-pressed="false">10%</button>
+              <button id="sim-percent-chip-20" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="percent" data-value="20" aria-pressed="true">20%</button>
+              <button id="sim-percent-chip-30" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="percent" data-value="30" aria-pressed="false">30%</button>
+              <button id="sim-percent-chip-50" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="percent" data-value="50" aria-pressed="false">50%</button>
+            </div>
+            <p id="sim-percent-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" aria-live="polite" hidden></p>
+            <p id="sim-step-3-desc" class="hint">Відсоток рахується від вільного залишку: дохід мінус витрати. Популярна порада: близько 20%.</p>
+            <p id="sim-percent-hint" class="hint">≈ <span id="sim-percent-money" class="font-semibold text-navy">3 600 ₴</span> на місяць</p>
+          </div>
+        </section>
+
+        <!-- Крок 4. Періодичність -->
+        <section id="sim-step-4" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-4" tabindex="0" hidden>
+          <fieldset id="sim-frequency-group" class="min-w-0">
+            <legend class="label mb-2">Як часто ви відкладаєте</legend>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div class="relative">
+                <input id="sim-freq-week" class="peer sr-only" type="radio" name="frequency" value="week" aria-describedby="sim-frequency-hint">
+                <label for="sim-freq-week" class="choice">Щотижня</label>
+              </div>
+              <div class="relative">
+                <input id="sim-freq-month" class="peer sr-only" type="radio" name="frequency" value="month" checked aria-describedby="sim-frequency-hint">
+                <label for="sim-freq-month" class="choice">Щомісяця</label>
+              </div>
+              <div class="relative">
+                <input id="sim-freq-quarter" class="peer sr-only" type="radio" name="frequency" value="quarter" aria-describedby="sim-frequency-hint">
+                <label for="sim-freq-quarter" class="choice">Щокварталу</label>
+              </div>
+              <div class="relative">
+                <input id="sim-freq-year" class="peer sr-only" type="radio" name="frequency" value="year" aria-describedby="sim-frequency-hint">
+                <label for="sim-freq-year" class="choice">Щороку</label>
+              </div>
+            </div>
+            <p id="sim-frequency-hint" class="hint mt-4">Відкладаєте <span id="sim-frequency-money" class="font-semibold text-navy">3 600 ₴</span> <span id="sim-frequency-word">щомісяця</span>. Річна сума не змінюється, змінюється розмір одного внеску.</p>
+          </fieldset>
+        </section>
+
+        <!-- Крок 5. Роки та дохід від відсотків -->
+        <section id="sim-step-5" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-5" tabindex="0" hidden>
+          <div id="sim-years-group">
+            <div class="slider-head">
+              <label id="sim-years-label" class="label" for="sim-years-range">Скільки років відкладатимете</label>
+              <output id="sim-years-out" class="out" for="sim-years-range">10 років</output>
+            </div>
+            <input id="sim-years-range" class="range" type="range" name="years" min="1" max="40" step="1" value="10"
+                   aria-describedby="sim-years-err" aria-valuetext="10 років">
+            <div class="flex justify-between text-sm text-muted" aria-hidden="true">
+              <span id="sim-years-min">1 рік</span>
+              <span id="sim-years-max">40 років</span>
+            </div>
+            <div id="sim-years-chips" class="mt-4 flex flex-wrap gap-2" role="group" aria-label="Швидкий вибір строку">
+              <button id="sim-years-chip-5" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="years" data-value="5" aria-pressed="false">5 років</button>
+              <button id="sim-years-chip-10" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="years" data-value="10" aria-pressed="true">10 років</button>
+              <button id="sim-years-chip-20" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="years" data-value="20" aria-pressed="false">20 років</button>
+              <button id="sim-years-chip-30" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="years" data-value="30" aria-pressed="false">30 років</button>
+            </div>
+            <p id="sim-years-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" aria-live="polite" hidden></p>
+          </div>
+
+          <!-- Необовʼязково: дохід від відсотків на накопичення -->
+          <div id="sim-rate-box" class="rounded-card border border-line bg-page p-4">
+            <label for="sim-rate-toggle" class="flex items-start gap-3 font-medium text-navy">
+              <input id="sim-rate-toggle" class="mt-1 size-5 shrink-0 accent-action" type="checkbox" aria-describedby="sim-rate-desc">
+              <span>Врахувати дохід від відсотків</span>
+            </label>
+            <p id="sim-rate-desc" class="hint ml-8">Наприклад, депозит або ОВДП. Це припущення, а не гарантія доходу.</p>
+
+            <div id="sim-rate-group" class="mt-4" hidden>
+              <div class="slider-head">
+                <label id="sim-rate-label" class="label" for="sim-rate-range">Річна дохідність</label>
+                <output id="sim-rate-out" class="out" for="sim-rate-range">8% річних</output>
+              </div>
+              <input id="sim-rate-range" class="range" type="range" name="rate" min="1" max="20" step="0.5" value="8"
+                     aria-describedby="sim-rate-desc sim-rate-err" aria-valuetext="8 відсотків річних">
+              <div class="flex justify-between text-sm text-muted" aria-hidden="true">
+                <span id="sim-rate-min">1%</span>
+                <span id="sim-rate-max">20%</span>
+              </div>
+              <p id="sim-rate-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" aria-live="polite" hidden></p>
+            </div>
+          </div>
+        </section>
+      </form>
+
+      <!-- ===== КРОК 6: РЕЗУЛЬТАТ ===== -->
+      <section id="sim-step-6" class="mt-6 flex flex-col gap-6 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-6" tabindex="0" hidden>
+
+        <!-- Підсумок -->
+        <section id="sim-summary" class="card card-dark shadow-none" aria-labelledby="sim-summary-title">
+          <h3 id="sim-summary-title" class="text-lg text-white">Ви відкладете</h3>
+          <p class="mt-2">
+            <output id="sim-total" class="block break-words font-heading text-figure font-bold tabular-nums" aria-live="polite">432 000 ₴</output>
+          </p>
+          <p id="sim-total-note" class="mt-1 text-sm text-white/75">120 внесків за 10 років, відкладаючи щомісяця</p>
+
+          <dl id="sim-stats" class="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div class="stat text-navy">
+              <dt>Ваші внески</dt>
+              <dd id="sim-stat-contrib">432 000 ₴</dd>
+            </div>
+            <div class="stat text-navy">
+              <dt>Відсотки</dt>
+              <dd id="sim-stat-interest">0 ₴</dd>
+            </div>
+            <div class="stat text-navy">
+              <dt>Один внесок</dt>
+              <dd id="sim-stat-amount">3 600 ₴</dd>
+            </div>
+            <div class="stat text-navy">
+              <dt>Частка від доходу</dt>
+              <dd id="sim-stat-share">9%</dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- Графік і дані -->
+        <section id="sim-viz" aria-labelledby="sim-viz-title">
+          <h3 id="sim-viz-title" class="text-lg">Динаміка накопичень</h3>
+          <figure id="sim-chart-figure" class="m-0 mt-3">
+            <div id="sim-chart-box" class="relative aspect-4/3 w-full rounded-card border border-line bg-page sm:aspect-video">
+              <canvas id="sim-chart-canvas" class="size-full touch-pan-y" role="img" aria-label="Графік накопичень за роками">
+                Графік недоступний. Відкрийте таблицю по роках нижче.
+              </canvas>
+            </div>
+            <ul id="sim-chart-legend" class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
+              <li><span class="mr-2 inline-block h-0.5 w-6 bg-action align-middle"></span>Разом</li>
+              <li id="sim-legend-contrib" hidden><span class="mr-2 inline-block w-6 border-t-2 border-dashed border-ink-blue align-middle"></span>Ваші внески</li>
+            </ul>
+            <figcaption id="sim-chart-readout" class="hint" aria-live="off">Наведіть курсор або проведіть пальцем по графіку, щоб побачити суму за рік.</figcaption>
+          </figure>
+
+          <details id="sim-data-details" class="faq mt-4">
+            <summary id="sim-data-summary">Таблиця по роках</summary>
+            <div id="sim-table-scroll" class="mx-5 mb-5 overflow-x-auto rounded-control border border-line bg-white">
+              <table id="sim-table" class="w-full min-w-80 text-left tabular-nums">
+                <caption class="sr-only">Накопичення по роках</caption>
+                <thead class="bg-mint text-sm">
+                  <tr>
+                    <th id="sim-th-year" class="p-3 font-semibold" scope="col">Рік</th>
+                    <th id="sim-th-paid" class="p-3 text-right font-semibold" scope="col">Внески</th>
+                    <th id="sim-th-interest" class="p-3 text-right font-semibold" scope="col" hidden>Відсотки</th>
+                    <th id="sim-th-total" class="p-3 text-right font-semibold" scope="col">Разом</th>
+                  </tr>
+                </thead>
+                <tbody id="sim-table-body">
+                  <tr class="border-t border-line">
+                    <td id="sim-table-empty" class="p-3 text-muted" colspan="3">Дані зʼявляться після розрахунку</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </section>
+
+        <!-- Дії -->
+        <div id="sim-actions" class="flex flex-col gap-3">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <button id="sim-save" class="btn btn-ghost" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-save"/></svg>
+              Зберегти
+            </button>
+            <button id="sim-share" class="btn btn-ghost" type="button">
+              <svg class="ico" aria-hidden="true"><use href="#i-share"/></svg>
+              Поділитися
+            </button>
+          </div>
+
+          <!-- Помилки збереження й поширення (тільки тут) -->
+          <div id="sim-errors" class="flex items-start gap-2 rounded-control border border-danger bg-danger/5 p-3 text-sm font-medium text-danger [&[hidden]]:hidden" role="alert" aria-live="assertive" hidden></div>
+          <p id="sim-status" class="status" role="status" aria-live="polite"></p>
+
+          <a id="sim-cta-plan" class="btn w-full" href="#signup">
+            Створити план
+            <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+          </a>
+
+          <button id="sim-reset" class="text-link self-start" type="button">Почати спочатку</button>
+        </div>
+      </section>
+
+      <!-- Підказка з поточним результатом (кроки 1–5) -->
+      <p id="sim-preview" class="mt-6 rounded-control bg-mint px-4 py-3 text-sm text-ink-blue" aria-live="off">Поки що виходить: 432 000 ₴ за 10 років</p>
+
+      <!-- Навігація між кроками -->
+      <div id="sim-nav" class="mt-4 flex flex-wrap items-center gap-3">
+        <button id="sim-back" class="btn btn-ghost flex-1 sm:flex-none" type="button" hidden>Назад</button>
+        <button id="sim-next" class="btn flex-1 sm:min-w-40 sm:flex-none" type="button">
+          <span id="sim-next-label">Далі</span>
+          <svg class="ico" aria-hidden="true"><use href="#i-arrow-right"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
 
     <!-- ПЕРЕВАГИ: що ви отримуєте -->
     <section id="benefits" aria-labelledby="benefits-title" class="section">
@@ -312,7 +491,7 @@
         <figure class="video mt-8">
           <!-- Пропорцію задає лише CSS (.video__frame). Атрибути width/height на iframe не додавайте: height перебиває aspect-ratio -->
           <iframe class="video__frame"
-                  src="https://www.youtube.com/embed/CbJpHvMqnEY?hl=uk&amp;cc_load_policy=1&amp;rel=0"
+                  src="https://www.youtube-nocookie.com/embed/CbJpHvMqnEY?hl=uk&amp;cc_load_policy=1&amp;rel=0"
                   title="Відео: як працює сервіс «Потік монет»" loading="lazy"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
@@ -408,13 +587,14 @@
       </div>
     </section>
 
-    <!-- ВІДГУКИ (єдина секція: слайдер + відгуки користувачів + форма) -->
-    <section id="reviews" aria-labelledby="reviews-title" class="section bg-page">
+    <!-- ВІДГУКИ (єдина секція: слайдер + відгуки користувачів + форма).
+         Клас "reviews" потрібен для стилів Swiper у style.css (.reviews .swiper …) -->
+    <section id="reviews" aria-labelledby="reviews-title" class="reviews section bg-page">
       <div class="wrap">
         <header class="mx-auto max-w-2xl text-center">
           <p class="pill">Відгуки</p>
           <h2 id="reviews-title" class="text-h2">Історії фінансової свободи</h2>
-          <p class="mt-4 text-lg leading-body text-muted">Приклади того, як фрилансери можуть планувати бюджет з нерегулярним доходом</p>
+          <p class="mt-4 text-lg leading-body text-muted">Приклади того, як фрилансери можуть планувати бюджет з нерегулярним доходом.</p>
         </header>
 
         <!-- TODO: слайди нижче — приклади. Перед запуском замініть на справжні відгуки й фото (assets/avatars/) -->
@@ -477,7 +657,8 @@
           </button>
         </div>
 
-        <div class="dots swiper-pagination-custom mt-6 flex w-full justify-center gap-2 text-center"></div>
+        <!-- Відступ задає .dots у style.css (правила поза @layer перекривають утиліти, тому mt-* тут зайве) -->
+        <div class="dots swiper-pagination-custom w-full text-center"></div>
 
         <!-- Відгуки, надіслані користувачами -->
         <ul id="review-list" class="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3" hidden></ul>
@@ -494,11 +675,11 @@
             <!-- Замініть action на реальний endpoint і увімкніть SEND_TO_SERVER у js/validation.js -->
             <form id="review-form" method="post" action="/api/review" class="mt-6 rounded-card border border-line bg-white p-5 shadow-card md:p-8" novalidate>
               <h3 class="text-2xl">Залиште свій відгук</h3>
-              <p class="mt-1 text-sm text-muted">Поля з * обов'язкові.</p>
+              <p class="mt-1 text-sm text-muted">Поля з * обовʼязкові.</p>
 
               <div class="mt-6 grid gap-5 sm:grid-cols-2">
                 <div>
-                  <label for="r-name" class="label req">Ім'я</label>
+                  <label for="r-name" class="label req">Імʼя</label>
                   <input id="r-name" name="name" type="text" required maxlength="60"
                          autocomplete="name" autocapitalize="words" enterkeyhint="next"
                          aria-invalid="false" aria-describedby="r-name-error" class="field">
@@ -561,7 +742,7 @@
         <div class="mt-8 space-y-3">
           <details class="faq group">
             <summary><span>Чи безкоштовний сервіс?</span><svg class="ico transition-transform group-open:rotate-180" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary>
-            <p>Так, базові можливості, зокрема симулятор заощаджень, доступні безкоштовно. Розширені функції з'являться в окремому тарифі.</p>
+            <p>Так, базові можливості, зокрема симулятор заощаджень, доступні безкоштовно. Розширені функції зʼявляться в окремому тарифі.</p>
           </details>
           <details class="faq group">
             <summary><span>Наскільки точні розрахунки?</span><svg class="ico transition-transform group-open:rotate-180" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary>
@@ -577,7 +758,7 @@
           </details>
           <details class="faq group">
             <summary><span>Як видалити мої дані?</span><svg class="ico transition-transform group-open:rotate-180" aria-hidden="true"><use href="#i-chevron-down"/></svg></summary>
-            <p>Напишіть нам через розділ «Контакти», і ми видалимо ваш акаунт та всі пов'язані дані.</p>
+            <p>Напишіть нам через розділ «Контакти», і ми видалимо ваш акаунт та всі повʼязані дані.</p>
           </details>
         </div>
         <div class="mt-8 rounded-card bg-mint p-5 text-center md:p-6">
@@ -594,11 +775,11 @@
         <!-- Замініть action на реальний endpoint і увімкніть SEND_TO_SERVER у js/validation.js -->
         <form id="signup-form" method="post" action="/api/signup" class="rounded-card border border-line bg-white p-5 shadow-card md:p-8" novalidate>
           <h2 id="signup-title" class="text-center text-h2">Створіть свій план</h2>
-          <p class="mt-2 text-center text-muted">Зареєструйтесь, щоб зберігати сценарії та отримувати підказки. Поля з * обов'язкові.</p>
+          <p class="mt-2 text-center text-muted">Зареєструйтесь, щоб зберігати сценарії та отримувати підказки. Поля з * обовʼязкові.</p>
 
           <div class="mt-6 space-y-5">
             <div>
-              <label for="s-name" class="label req">Ім'я</label>
+              <label for="s-name" class="label req">Імʼя</label>
               <input id="s-name" name="name" type="text" required maxlength="60"
                      autocomplete="name" autocapitalize="words" enterkeyhint="next"
                      aria-invalid="false" aria-describedby="s-name-error" class="field">
@@ -615,7 +796,7 @@
             </div>
 
             <div>
-              <label for="s-phone" class="label">Телефон <span class="font-normal text-muted">(необов'язково)</span></label>
+              <label for="s-phone" class="label">Телефон <span class="font-normal text-muted">(необовʼязково)</span></label>
               <input id="s-phone" name="phone" type="tel" maxlength="30"
                      autocomplete="tel" inputmode="tel" enterkeyhint="next"
                      aria-invalid="false" aria-describedby="s-phone-hint s-phone-error" class="field">
@@ -657,7 +838,8 @@
         <h2 id="contacts-title" class="text-center text-h2">Де нас знайти</h2>
         <p class="mx-auto mt-3 max-w-2xl text-center text-muted">Напишіть нам або завітайте в офіс. Відповідаємо протягом одного робочого дня.</p>
         <figure class="map mt-8">
-          <!-- TODO: цей embed веде на банкомат ПриватБанку; замініть src на карту реального офісу -->
+          <!-- TODO: цей embed веде на банкомат ПриватБанку, а не на ваш офіс. Замініть src на карту реального офісу
+               (Google Maps → Поділитися → Вбудувати карту) і синхронізуйте адресу нижче -->
           <iframe class="map__frame"
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d20582.495349762772!2d23.984729244366296!3d49.84599142488702!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x473add78aff992b9%3A0xfd1bd3c868df38e5!2z0JHQsNC90LrQvtC80LDRgiDQn9GA0LjQstCw0YLQkdCw0L3Qug!5e0!3m2!1suk!2sua!4v1792513232625!5m2!1suk!2sua"
                   title="Інтерактивна карта Google Maps із адресою офісу" loading="lazy"
@@ -750,7 +932,7 @@
 
     <div class="border-t border-white/15">
       <div class="wrap flex flex-col gap-2 py-6 lg:flex-row lg:items-center lg:justify-between">
-        <p>© 2026 Потік монет. Всі права захищено.</p>
+        <p>© 2026 Потік монет. Усі права захищені.</p>
         <ul class="flex flex-wrap gap-x-6">
           <li><a class="foot-link" href="/privacy">Політика конфіденційності</a></li>
           <li><a class="foot-link" href="/terms">Умови надання послуг</a></li>
