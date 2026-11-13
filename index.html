@@ -22,26 +22,19 @@
        <meta name="twitter:card" content="summary_large_image"> -->
   <meta name="twitter:card" content="summary">
 
-  <!-- 1. Раннє встановлення з'єднання з CDN (без crossorigin: підходить для звичайних script/css) -->
-  <link rel="preconnect" href="https://cdn.jsdelivr.net">
-
-  <!-- 2. Критичний CSS проєкту (єдиний рендер-блокуючий стиль) -->
+  <!-- Єдиний рендер-блокуючий ресурс: CSS проєкту -->
   <link rel="stylesheet" href="styles/output.css">
 
-  <!-- 3. Неблокуюче завантаження CSS бібліотек нижче першого екрану -->
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/swiper@11.1.14/swiper-bundle.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <link rel="preload" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <!-- Без JS: слайдер лишається статичним, але зі стилями -->
   <noscript>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.1.14/swiper-bundle.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.css">
     <style>@media (width < 80rem) { .site-nav:not([data-open]) { display: block !important; } }</style>
   </noscript>
 
-  <!-- 4. Скрипти з пріоритезацією (typed.js і widget.js — вище, галерея/лайтбокс — нижче) -->
+  <!-- Скрипти. Swiper і Fancybox підвантажує gallery.js, коли користувач наближається до секцій -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
   <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12" defer></script>
   <script src="js/widget.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/swiper@11.1.14/swiper-bundle.min.js" defer fetchpriority="low"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.umd.js" defer fetchpriority="low"></script>
   <script src="js/gallery.js" defer fetchpriority="low"></script>
   <script src="js/validation.js" defer fetchpriority="low"></script>
 </head>

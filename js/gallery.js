@@ -1,12 +1,41 @@
-const mqReduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-const reduceMotion = mqReduce.matches;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const idle = (fn) =>
-  'requestIdleCallback' in window
-    ? requestIdleCallback(fn, { timeout: 2000 })
-    : setTimeout(fn, 1);
+const SWIPER = 'https://cdn.jsdelivr.net/npm/swiper@11.1.14/swiper-bundle.min';
+const FANCY = 'https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox';
 
-function whenVisible(el, init, rootMargin = '200px') {
+/* ---------- Завантажувачі (кожен URL вантажиться один раз) ---------- */
+const loaded = new Map();
+
+function loadCSS(href) {
+  if (!loaded.has(href)) {
+    loaded.set(href, new Promise((resolve, reject) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.onload = resolve;
+      link.onerror = reject;
+      document.head.append(link);
+    }));
+  }
+  return loaded.get(href);
+}
+
+function loadJS(src) {
+  if (!loaded.has(src)) {
+    loaded.set(src, new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.append(script);
+    }));
+  }
+  return loaded.get(src);
+}
+
+/* Спостерігаємо за <section>, а не за вмістом: секції нижче екрана мають
+   content-visibility: auto, і їхній вміст не має розмірів, поки секція далеко. */
+function whenVisible(el, init, rootMargin = '400px') {
   if (!el) return;
   if (!('IntersectionObserver' in window)) return init();
   const io = new IntersectionObserver((entries, obs) => {
@@ -18,9 +47,14 @@ function whenVisible(el, init, rootMargin = '200px') {
   io.observe(el);
 }
 
-// 1. Swiper: лише коли слайдер наближається до в'юпорту
-whenVisible(document.querySelector('.testimonials-swiper'), () => {
-  if (typeof Swiper === 'undefined') return;
+/* ---------- 1. Swiper: вантажимо, коли наближається секція відгуків ---------- */
+whenVisible(document.getElementById('reviews'), async () => {
+  if (!document.querySelector('.testimonials-swiper')) return;
+  try {
+    await Promise.all([loadCSS(`${SWIPER}.css`), loadJS(`${SWIPER}.js`)]);
+  } catch {
+    return; // без бібліотеки слайди залишаються в рядку (див. критичний CSS)
+  }
   new Swiper('.testimonials-swiper', {
     rewind: true,
     spaceBetween: 20,
@@ -44,17 +78,20 @@ whenVisible(document.querySelector('.testimonials-swiper'), () => {
   });
 });
 
-// 2. Fancybox: у вільний час (делегований bind, дешевий)
-idle(() => {
-  if (typeof Fancybox === 'undefined') return;
+/* ---------- 2. Fancybox: вантажимо, коли наближається галерея ---------- */
+whenVisible(document.getElementById('gallery'), async () => {
+  try {
+    await Promise.all([loadCSS(`${FANCY}.css`), loadJS(`${FANCY}.umd.js`)]);
+  } catch {
+    return; // посилання просто відкриють зображення напряму
+  }
   Fancybox.bind("[data-fancybox='main-gallery']", {
     Carousel: { Transition: 'fade' },
     Images: { Panzoom: { maxScale: 3 } },
   });
 });
 
-// 3. Typed: працює лише поки елемент видно.
-//    new Typed() стартує сам, start() потрібен тільки для відновлення після stop().
+/* ---------- 3. Typed: працює лише поки елемент видно ---------- */
 const typedEl = document.getElementById('typed-text');
 if (typedEl) {
   if (reduceMotion || !('IntersectionObserver' in window) || typeof Typed === 'undefined') {
@@ -84,7 +121,7 @@ if (typedEl) {
   }
 }
 
-// 4. Відео й карта: iframe створюється лише після кліку (без сторонніх cookie на старті)
+/* ---------- 4. Відео й карта: iframe створюється лише після кліку ---------- */
 document.querySelectorAll('[data-embed]').forEach((box) => {
   const btn = box.querySelector('[data-embed-load]');
   const tpl = box.querySelector('template');
