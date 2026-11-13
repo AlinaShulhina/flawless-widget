@@ -17,6 +17,8 @@
  *   - у кожній формі приховане honeypot-поле name="contact_pref";
  *   - один <dialog id="success-modal"> (див. index.html).
  *
+ * Підключення: <script defer src="validation.js"></script> (перед main.js).
+ *
  * Відправка:
  *   SEND_TO_SERVER = false -> демо-режим: дані перевіряються, але нікуди не йдуть,
  *                             у модальному вікні чесний текст про це.
@@ -32,6 +34,13 @@
  *   - submit перевіряє всі поля; модальне вікно з'являється лише після успіху.
  *   - Телефон: ввід не блокується; зі ВСТАВЛЕНОГО фрагмента прибираються лише
  *     пробіли, дужки й дефіси (із повідомленням про це).
+ *
+ * Оптимізації:
+ *   - запис у DOM ідемпотентний (клас, aria, текст міняються лише за зміни стану);
+ *   - одна валідація на подію input замість двох;
+ *   - список полів форми кешується один раз у initForm;
+ *   - один постійний focusin-слухач замість нового на кожну відправку;
+ *   - символьний клас розділювачів телефону визначений в одному місці.
  */
 (() => {
   'use strict';
@@ -59,11 +68,15 @@
   // Телефон: початок, +380, рівно 9 цифр, кінець (без пробілів, дужок, дефісів)
   const PHONE_REGEX = /^\+380\d{9}$/;
 
-  // Розділювачі, які прибираються зі ВСТАВЛЕНОГО номера:
-  // пробіли (включно з нерозривним), дужки, дефіси, тире, мінус
-  const PHONE_SEPARATORS_REGEX = /[\s()\-‐-―−]/g;
-  // Те саме для перевірки наявності (без прапорця g, щоб test() був стабільним)
-  const PHONE_SEPARATOR_TEST = /[\s()\-‐-―−]/;
+  // Розділювачі телефону: пробіли (включно з нерозривним), дужки, дефіс,
+  // тире U+2010–U+2015 і мінус U+2212. Єдине джерело правди для трьох виразів нижче.
+  const PHONE_SEP = '\\s()\\-\\u2010-\\u2015\\u2212';
+  // Прибирання розділювачів зі ВСТАВЛЕНОГО номера (прапорець g)
+  const PHONE_SEPARATORS_REGEX = new RegExp('[' + PHONE_SEP + ']', 'g');
+  // Перевірка наявності розділювачів (без g, щоб test() був стабільним)
+  const PHONE_SEPARATOR_TEST = new RegExp('[' + PHONE_SEP + ']');
+  // Усе, що не цифра, не + і не розділювач (недопустимі символи)
+  const PHONE_INVALID_CHARS_REGEX = new RegExp('[^\\d+' + PHONE_SEP + ']', 'g');
 
   // Tailwind-класи станів рамки (єдине джерело стилів помилки й успіху).
   // Рядки написані повністю, щоб Tailwind знайшов їх під час збірки.
@@ -146,6 +159,12 @@
     return pluralize(count, 'цифра', 'цифри', 'цифр');
   }
 
+  // Записує текст в елемент лише якщо він змінився (без зайвих мутацій DOM
+  // і повторних оголошень aria-live)
+  function setText(el, text) {
+    if (el.textContent !== text) el.textContent = text;
+  }
+
   /* ========== 3. Валідатори окремих полів ========== */
   /* Кожна функція приймає поле й повертає текст помилки або '' (якщо все гаразд). */
 
@@ -181,7 +200,7 @@
 
   // Унікальні недопустимі символи (все, крім цифр, +, розділювачів)
   function findInvalidPhoneChars(value) {
-    const found = value.match(/[^\d+\s()\-‐-―−]/g) || [];
+    const found = value.match(PHONE_INVALID_CHARS_REGEX) || [];
     return Array.from(new Set(found)).slice(0, 5).join(' ');
   }
 
@@ -263,9 +282,11 @@
     consent: validateConsent,
   };
 
-  // Чи є для поля правило (лише власні ключі, без ключів прототипа)
+  // Чи є для поля правило (лише власні ключі, без ключів прототипа).
+  // hasOwnProperty.call замість Object.hasOwn: працює і в старіших браузерах.
   function hasValidator(field) {
-    return Boolean(field && field.name) && Object.hasOwn(VALIDATORS, field.name);
+    return Boolean(field && field.name) &&
+      Object.prototype.hasOwnProperty.call(VALIDATORS, field.name);
   }
 
   /* ========== 4. Стан полів і форм ========== */
@@ -282,6 +303,11 @@
     return touchedFields.has(field);
   }
 
+  // Поточний показаний стан поля: { kind: 'error' | 'success' | 'neutral', message }.
+  // Потрібен, щоб не переписувати DOM, коли нічого не змінилося.
+  const fieldState = new WeakMap();
+  // Поля форми (input, textarea, select), зібрані один раз у initForm
+  const formFields = new WeakMap();
   // Форми, які зараз надсилаються (захист від подвійної відправки)
   const sendingForms = new WeakSet();
   // Початковий текст кнопки відправки, поки вона показує «Надсилаємо…»
@@ -291,6 +317,10 @@
   // Форми, у яких зараз показано повідомлення про очищення вставки
   const formsWithPasteNotice = new WeakSet();
 
+  function getFields(form) {
+    return formFields.get(form) || [];
+  }
+
   /* ========== 5. Робота з інтерфейсом ========== */
 
   // Повертає елемент для тексту помилки під полем (id поля + "-error")
@@ -298,50 +328,52 @@
     return document.getElementById(field.id + '-error');
   }
 
-  // Прибирає з рамки поля класи обох станів
-  function clearFieldClasses(field) {
-    field.classList.remove(CLASS_ERROR, CLASS_SUCCESS);
+  // Застосовує стан поля: клас рамки, aria-invalid, текст помилки.
+  // Якщо стан і повідомлення не змінилися, DOM не чіпаємо.
+  function applyState(field, kind, message) {
+    const text = message || '';
+    const prev = fieldState.get(field);
+    if (prev && prev.kind === kind && prev.message === text) return;
+    fieldState.set(field, { kind: kind, message: text });
+
+    field.classList.toggle(CLASS_ERROR, kind === 'error');
+    field.classList.toggle(CLASS_SUCCESS, kind === 'success');
+    field.setAttribute('aria-invalid', kind === 'error' ? 'true' : 'false');
+
+    const errorEl = getErrorElement(field);
+    if (errorEl) setText(errorEl, text);
   }
 
   // Показує помилку: текст під полем (live-регіон завжди є в DOM), червона рамка, aria
   function showError(field, message) {
-    const errorEl = getErrorElement(field);
-    clearFieldClasses(field);
-    field.classList.add(CLASS_ERROR);
-    field.setAttribute('aria-invalid', 'true');
-    if (errorEl) errorEl.textContent = message;
+    applyState(field, 'error', message);
   }
 
   // Показує успіх: зелена рамка, текст помилки прибирається
   function showSuccess(field) {
-    const errorEl = getErrorElement(field);
-    clearFieldClasses(field);
-    field.classList.add(CLASS_SUCCESS);
-    field.setAttribute('aria-invalid', 'false');
-    if (errorEl) errorEl.textContent = '';
+    applyState(field, 'success', '');
   }
 
   // Повертає поле в нейтральний стан (без рамок-індикаторів)
   function showNeutral(field) {
-    const errorEl = getErrorElement(field);
-    clearFieldClasses(field);
-    field.setAttribute('aria-invalid', 'false');
-    if (errorEl) errorEl.textContent = '';
+    applyState(field, 'neutral', '');
   }
 
   // Виводить загальне повідомлення у елемент [data-status]
   function setFormStatus(form, message, state) {
     const statusEl = form.querySelector('[data-status]');
     if (!statusEl) return;
-    statusEl.textContent = message;
-    statusEl.setAttribute('data-state', state);
+    setText(statusEl, message);
+    if (statusEl.getAttribute('data-state') !== state) {
+      statusEl.setAttribute('data-state', state);
+    }
   }
 
   // Очищає загальне повідомлення
   function clearFormStatus(form) {
     const statusEl = form.querySelector('[data-status]');
     if (!statusEl) return;
-    statusEl.textContent = '';
+    setText(statusEl, '');
     statusEl.removeAttribute('data-state');
   }
 
@@ -357,17 +389,19 @@
     const counter = document.getElementById(textarea.id + '-counter');
     if (!counter) return;
     const max = textarea.maxLength > 0 ? textarea.maxLength : 1000;
-    counter.textContent = textarea.value.length + ' / ' + max;
+    setText(counter, textarea.value.length + ' / ' + max);
   }
 
   function updateCounters(form) {
-    form.querySelectorAll('textarea').forEach(updateCounter);
+    getFields(form)
+      .filter((field) => field.tagName === 'TEXTAREA')
+      .forEach(updateCounter);
   }
 
   /* ========== 6. Телефон: підказка-лічильник і вставка ========== */
 
   // Початковий текст підказки під полем (щоб повертати його назад)
-  const phoneHintDefaults = new Map();
+  const phoneHintDefaults = new WeakMap();
 
   // Повертає елемент підказки під телефоном (id поля + "-hint")
   function getPhoneHint(field) {
@@ -383,11 +417,11 @@
     const value = field.value.trim();
     if (/^\+380\d*$/.test(value)) {
       const count = value.length - 4;
-      hint.textContent = count <= PHONE_DIGITS_AFTER_CODE
+      setText(hint, count <= PHONE_DIGITS_AFTER_CODE
         ? 'Введено ' + count + ' із ' + PHONE_DIGITS_AFTER_CODE + ' цифр'
-        : 'Введено ' + count + ' цифр, потрібно ' + PHONE_DIGITS_AFTER_CODE;
+        : 'Введено ' + count + ' цифр, потрібно ' + PHONE_DIGITS_AFTER_CODE);
     } else {
-      hint.textContent = phoneHintDefaults.get(hint);
+      setText(hint, phoneHintDefaults.get(hint));
     }
   }
 
@@ -404,7 +438,7 @@
     const statusEl = form.querySelector('[data-status]');
     if (statusEl && statusEl.getAttribute('data-state') === 'error') {
       const hint = getPhoneHint(field);
-      if (hint) hint.textContent = message;
+      if (hint) setText(hint, message);
       return;
     }
     setFormStatus(form, message, 'success');
@@ -447,7 +481,9 @@
   /* Побудоване на нативному <dialog> і showModal(). Браузер сам забезпечує:
      фокус усередині вікна, неактивну решту сторінки (inert), закриття клавішею Escape
      та шар поверх усього вмісту. Тут додано тексти, блокування прокрутки,
-     закриття кнопкою й кліком по затемненню та надійне повернення фокуса. */
+     закриття кнопкою й кліком по затемненню та надійне повернення фокуса.
+     Щоб при блокуванні прокрутки не стрибала ширина сторінки, додайте в CSS:
+     html { scrollbar-gutter: stable; } */
 
   // Елемент, який мав фокус до відкриття (зазвичай кнопка «Надіслати»)
   let modalLastFocused = null;
@@ -543,18 +579,13 @@
 
   /* ========== 8. Логіка перевірки ========== */
 
-  // Перевіряє одне поле. Повертає true, якщо поле валідне (або не підлягає перевірці).
-  function validateField(field) {
-    if (!hasValidator(field)) return true;
-
-    const message = VALIDATORS[field.name](field);
-
+  // Малює результат перевірки: помилка, успіх або нейтральний стан.
+  // Чекбокс і необов'язкове порожнє поле лишаються нейтральними, без зеленої рамки.
+  function renderField(field, message) {
     if (message) {
       showError(field, message);
-      return false;
+      return;
     }
-
-    // Чекбокс і необов'язкове порожнє поле лишаються нейтральними, без зеленої рамки
     const isCheckbox = field.type === 'checkbox';
     const isEmptyOptional = !isCheckbox && !field.required && field.value.trim() === '';
     if (isCheckbox || isEmptyOptional) {
@@ -562,7 +593,14 @@
     } else {
       showSuccess(field);
     }
-    return true;
+  }
+
+  // Перевіряє одне поле. Повертає true, якщо поле валідне (або не підлягає перевірці).
+  function validateField(field) {
+    if (!hasValidator(field)) return true;
+    const message = VALIDATORS[field.name](field);
+    renderField(field, message);
+    return !message;
   }
 
   // Перевіряє всі поля форми й позначає їх як «перевірені».
@@ -570,7 +608,7 @@
   function validateForm(form) {
     const invalidFields = [];
     // Перевіряємо всі поля, а не зупиняємось на першій помилці
-    form.querySelectorAll('input, textarea, select').forEach((field) => {
+    getFields(form).forEach((field) => {
       if (!hasValidator(field)) return;
       markTouched(field);
       if (!validateField(field)) invalidFields.push(field);
@@ -592,18 +630,13 @@
   // Збирає дані форми: текстові значення без пробілів по краях, чекбокси як boolean
   function collectPayload(form) {
     const data = {};
-    form.querySelectorAll('input, textarea, select').forEach((field) => {
+    getFields(form).forEach((field) => {
       if (!field.name) return;
       data[field.name] = field.type === 'checkbox' ? field.checked : field.value.trim();
     });
     // Час від першої взаємодії: сервер може відсіювати занадто швидкі відправки
     data._elapsedMs = startedAt.has(form) ? Date.now() - startedAt.get(form) : 0;
     return data;
-  }
-
-  // Починає відлік часу заповнення з першого фокуса у формі
-  function trackStart(form) {
-    form.addEventListener('focusin', () => startedAt.set(form, Date.now()), { once: true });
   }
 
   // Вмикає/вимикає стан «Надсилаємо…»: кнопка залишається в фокусі (aria-disabled),
@@ -662,8 +695,8 @@
     form.reset();
     resetFormState(form);
     clearFormStatus(form);
+    // Відлік заповнення почнеться знову з наступного focusin (слухач у initForm постійний)
     startedAt.delete(form);
-    trackStart(form);
     if (shouldNotify) {
       form.dispatchEvent(new CustomEvent('form:submitted', {
         bubbles: true,
@@ -741,7 +774,7 @@
 
   // Повертає форму у стартовий стан: без індикаторів і без позначок «перевірено»
   function resetFormState(form) {
-    form.querySelectorAll('input, textarea, select').forEach((field) => {
+    getFields(form).forEach((field) => {
       if (!hasValidator(field)) return;
       touchedFields.delete(field);
       showNeutral(field);
@@ -763,6 +796,8 @@
     normalizeField(field);
     validateField(field);
     refreshFormStatus(field.form);
+    // normalizeField міг обрізати пробіли без події input, тож лічильник оновлюємо
+    // (setText не чіпає DOM, якщо текст не змінився)
     if (field.tagName === 'TEXTAREA') updateCounter(field);
   }
 
@@ -781,15 +816,16 @@
 
     if (!isTouched(field)) return;
 
+    // Одна валідація на подію: результат використовується і для логіки, і для показу
+    const message = VALIDATORS[field.name](field);
+
     // Телефон: зелене поле, яке користувач почав редагувати й зробив неповним,
     // стає нейтральним, а не червоним. Помилка з'явиться на blur або submit.
-    if (field.name === 'phone' && field.classList.contains(CLASS_SUCCESS) && validatePhone(field)) {
+    if (field.name === 'phone' && message && field.classList.contains(CLASS_SUCCESS)) {
       showNeutral(field);
-      refreshFormStatus(field.form);
-      return;
+    } else {
+      renderField(field, message);
     }
-
-    validateField(field);
     refreshFormStatus(field.form);
   }
 
@@ -806,13 +842,20 @@
 
   // Підключає всі обробники до однієї форми
   function initForm(form) {
+    // Поля збираємо один раз (форми статичні, поля динамічно не додаються)
+    formFields.set(form, Array.from(form.querySelectorAll('input, textarea, select')));
+
     form.addEventListener('submit', handleSubmit);
     // blur не спливає, тому використовуємо focusout
     form.addEventListener('focusout', handleBlur);
     form.addEventListener('input', handleInput);
     form.addEventListener('change', handleChange);
     form.addEventListener('paste', handlePhonePaste);
-    trackStart(form);
+    // Відлік часу заповнення стартує з першого фокуса у формі
+    // (один постійний слухач; після finishSubmit startedAt очищується)
+    form.addEventListener('focusin', () => {
+      if (!startedAt.has(form)) startedAt.set(form, Date.now());
+    });
   }
 
   // Запускаємо після завантаження DOM. Жодної перевірки при старті немає.

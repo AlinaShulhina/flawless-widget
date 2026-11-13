@@ -3,7 +3,18 @@
 /* Симулятор заощаджень: вкладки-кроки, що відкриваються поступово.
    Vanilla JS, без залежностей.
    Підключення: <script type="module" src="js/savings.js"></script>
-   Кожен віджет: <section data-savings-sim data-sim-id="..."> (перший ще й data-sync-url). */
+   (модуль відкладений сам по собі, як defer; для віджета в першому екрані додайте
+   <link rel="modulepreload" href="js/savings.js"> у <head>).
+   Кожен віджет: <section data-savings-sim data-sim-id="..."> (перший ще й data-sync-url).
+
+   Оптимізації:
+   - запис у DOM ідемпотентний (setText / setProp / setAttr, кеш помилок і CTA-посилання);
+   - syncControls не переписує межі й значення, якщо вони не змінилися;
+   - графік не перемальовується на прихованих кроках і не викликає примусових
+     перерахунків layout (розміри з ResizeObserver, палітра кешується, offsetX замість
+     getBoundingClientRect);
+   - таблиця перебудовується лише коли змінилися дані;
+   - destroy() скасовує rAF, таймер і всі спостерігачі. */
 
 /* ===== Константи ===== */
 const STORAGE_PREFIX = 'savingsSim:v2';
@@ -25,7 +36,8 @@ const ROUND = { rate: (v) => Math.round(v * 2) / 2, income: round2, expenses: ro
 const roundFor = (key) => ROUND[key] || Math.round;
 const isMoney = (key) => key === 'income' || key === 'expenses';
 const CHIP_KEYS = ['percent', 'years'];                                 // дозволені data-chip
-const URL_KEYS = ['income', 'exp', 'pct', 'freq', 'years', 'unit', 'rate'];
+/* Параметр URL -> ключ стану */
+const URL_MAP = { income: 'income', exp: 'expenses', pct: 'percent', freq: 'freq', years: 'years', unit: 'unit', rate: 'rate' };
 const SAVED_KEYS = ['income', 'expenses', 'percent', 'years', 'freq'];
 const STEP_FIELD = { 1: 'income', 2: 'expenses', 3: 'percent' };        // де показувати повідомлення кроку
 const STEP_FIELDS = { 1: ['income'], 2: ['expenses'] };                 // числові поля, які треба перевіряти
@@ -139,6 +151,8 @@ function niceTop(max) {
 /* ===== Унікальні id для кожного екземпляра ===== */
 let uidCounter = 0;
 const instances = new WeakMap();
+const REF_ATTRS = ['for', 'aria-controls', 'aria-labelledby', 'aria-describedby'];
+const REF_SELECTOR = REF_ATTRS.map((a) => `[${a}]`).join(',');
 
 /* Перший віджет лишає id як є, наступним додається префікс; посилання for/aria-* переписуються. */
 function ensureUid(root) {
@@ -146,10 +160,10 @@ function ensureUid(root) {
   uidCounter += 1;
   const uid = uidCounter === 1 ? '' : `s${uidCounter}-`;
   if (uid) {
-    const refAttrs = ['for', 'aria-controls', 'aria-labelledby', 'aria-describedby'];
     root.querySelectorAll('[id]').forEach((n) => { n.id = uid + n.id; });
-    [root, ...root.querySelectorAll('*')].forEach((n) => {
-      refAttrs.forEach((a) => {
+    /* Обходимо лише вузли, які справді мають посилальні атрибути */
+    [root, ...root.querySelectorAll(REF_SELECTOR)].forEach((n) => {
+      REF_ATTRS.forEach((a) => {
         const v = n.getAttribute(a);
         if (v) n.setAttribute(a, v.split(/\s+/).filter(Boolean).map((t) => uid + t).join(' '));
       });
@@ -168,6 +182,19 @@ function degrade(root) {
   root.setAttribute('data-sim-broken', '');
 }
 
+/* Ідентифікатори елементів поля за шаблоном sim-{ключ}-{частина} */
+function makeFieldIds(key, opts) {
+  const o = opts || {};
+  return {
+    range: `sim-${key}-range`,
+    num: o.num ? `sim-${key}-number` : null,
+    out: `sim-${key}-out`,
+    err: `sim-${key}-err`,
+    min: o.bounds ? `sim-${key}-min` : null,
+    max: o.bounds ? `sim-${key}-max` : null,
+  };
+}
+
 function createSavingsSim(root) {
   const uid = ensureUid(root);
   const $ = (id) => root.querySelector(`#${uid}${id}`);                 // пошук лише всередині root
@@ -183,11 +210,11 @@ function createSavingsSim(root) {
 
   /* ===== Пошук елементів ===== */
   const fieldIds = {
-    income: { range: 'sim-income-range', num: 'sim-income-number', out: 'sim-income-out', err: 'sim-income-err', min: 'sim-income-min', max: 'sim-income-max' },
-    expenses: { range: 'sim-expenses-range', num: 'sim-expenses-number', out: 'sim-expenses-out', err: 'sim-expenses-err', min: 'sim-expenses-min', max: 'sim-expenses-max' },
-    percent: { range: 'sim-percent-range', num: null, out: 'sim-percent-out', err: 'sim-percent-err' },
-    years: { range: 'sim-years-range', num: null, out: 'sim-years-out', err: 'sim-years-err' },
-    rate: { range: 'sim-rate-range', num: null, out: 'sim-rate-out', err: 'sim-rate-err' },
+    income: makeFieldIds('income', { num: true, bounds: true }),
+    expenses: makeFieldIds('expenses', { num: true, bounds: true }),
+    percent: makeFieldIds('percent'),
+    years: makeFieldIds('years'),
+    rate: makeFieldIds('rate'),
   };
   const fields = {};
   const elementMap = new Map();              // елемент -> [ключ, чи це числове поле]
@@ -232,10 +259,17 @@ function createSavingsSim(root) {
     return null;
   }
 
+  /* Колекції, які не змінюються: збираємо один раз, а не на кожен render */
+  const chips = Array.from(form.querySelectorAll('[data-chip]'));
+  const freqRadios = Array.from(form.querySelectorAll('input[name="frequency"]'));
+  const unitRadios = Array.from(form.querySelectorAll('input[name="unit-income"], input[name="unit-expenses"]'));
+
   /* ===== Стан ===== */
   const state = { ...DEFAULTS };
   const invalid = {};              // поля, у яких зараз некоректне введення
   const fieldMsgs = {};            // повідомлення, прив'язані до поля
+  const painted = {};              // що зараз показано під кожним полем (щоб не переписувати DOM)
+  const boundsSig = {};            // підпис останніх виставлених меж поля (lo|hi|step)
   let step = 1;                    // поточний крок
   let maxStep = 1;                 // найдальший відкритий крок
   let stepMsg = '';                // чому не можна перейти далі
@@ -247,12 +281,21 @@ function createSavingsSim(root) {
   let navLock = 0;
   let sharing = false;
   let lastResult = null;
+  let tableDirty = true;
   let lastCanvas = { w: 0, h: 0, dpr: 0 };
+  let box = { w: 0, h: 0 };        // розміри графіка (оновлює ResizeObserver, без forced layout)
+  let ctx2d = null;
+  let palette = null;              // кеш кольорів і шрифту графіка
   let series = { totals: [0], contribs: [0], rateOn: false };
   let ro = null;
+  let mo = null;
   const planBase = (el.cta.getAttribute('href') || '/plan').split('#')[0].split('?')[0];
 
+  /* Записують у DOM лише за зміни значення (менше мутацій, менше повторних оголошень aria-live) */
   const setText = (node, text) => { if (node.textContent !== text) node.textContent = text; };
+  const setProp = (node, prop, value) => { if (node[prop] !== value) node[prop] = value; };
+  const setAttr = (node, name, value) => { if (node.getAttribute(name) !== value) node.setAttribute(name, value); };
+
   const factor = (key) => (isMoney(key) && state.unit === 'year' ? 12 : 1);
   const effExpenses = () => Math.min(state.expenses, state.income);     // витрати ніколи не більші за дохід, але самі не перезаписуються
   const limitMonthly = (key) => ({
@@ -280,15 +323,17 @@ function createSavingsSim(root) {
 
   /* Синхронізація посилання Кнопки з правильною URL-структурою: path?params#hash */
   function updateCtaHref() {
-    const params = getUrlParams();
-    el.cta.setAttribute('href', `${planBase}?${params.toString()}#signup`);
+    const href = `${planBase}?${getUrlParams().toString()}#signup`;
+    if (el.cta.getAttribute('href') !== href) el.cta.setAttribute('href', href);
   }
 
   /* ===== Помилки: повідомлення під відповідним полем ===== */
   function paintFieldError(key, msg) {
+    if (painted[key] === msg) return;                         // нічого не змінилось: DOM не чіпаємо
+    painted[key] = msg;
     const f = fields[key];
-    if (f.err.textContent !== msg) f.err.textContent = msg;
-    f.err.hidden = !msg;
+    setText(f.err, msg);
+    setProp(f.err, 'hidden', !msg);
     [f.range, f.num].forEach((n) => {                         // aria-invalid лише коли є помилка
       if (!n) return;
       if (msg) n.setAttribute('aria-invalid', 'true');
@@ -323,8 +368,8 @@ function createSavingsSim(root) {
     /* Під кнопками результату: помилки збереження/поширення та попередження */
     const warnings = step === TOTAL_STEPS ? [warningFor('expenses'), warningFor('percent')] : [];
     const msg = [actionMsg, ...warnings].filter(Boolean).join(' ');
-    if (el.errors.textContent !== msg) el.errors.textContent = msg;
-    el.errors.hidden = !msg;
+    setText(el.errors, msg);
+    setProp(el.errors, 'hidden', !msg);
   }
 
   function setStatus(msg, isError) {
@@ -338,31 +383,36 @@ function createSavingsSim(root) {
   /* ===== Синхронізація контролів зі станом ===== */
   function syncControls(skipKey) {
     const f = state.unit === 'year' ? 12 : 1;
-    const inc = limitMonthly('income');
-    const exp = limitMonthly('expenses');
     const stepSize = 500 * f;
 
-    const setBounds = (key, lo, hi) => {
+    /* Межі, крок і підписи міняємо лише коли змінився їхній підпис (одиниці, дохід) */
+    const setBounds = (key, lim) => {
+      const lo = Math.round(lim.min * f);
+      const hi = Math.round(lim.max * f);
+      const sig = `${lo}|${hi}|${stepSize}`;
+      if (boundsSig[key] === sig) return;
+      boundsSig[key] = sig;
       const fld = fields[key];
-      fld.range.min = String(lo); fld.range.max = String(hi); fld.range.step = String(stepSize);
-      if (fld.num) { fld.num.min = String(lo); fld.num.max = String(hi); fld.num.step = String(stepSize); }
+      [fld.range, fld.num].forEach((n) => {
+        if (!n) return;
+        n.min = String(lo); n.max = String(hi); n.step = String(stepSize);
+      });
       if (fld.min) setText(fld.min, fmtMoney(lo));
       if (fld.max) setText(fld.max, fmtMoney(hi));
     };
-    setBounds('income', Math.round(inc.min * f), Math.round(inc.max * f));
-    setBounds('expenses', Math.round(exp.min * f), Math.round(exp.max * f));
+    setBounds('income', limitMonthly('income'));
+    setBounds('expenses', limitMonthly('expenses'));
 
     for (const key of Object.keys(fields)) {
       const fld = fields[key];
-      const v = shownOf(key);
-      fld.range.value = String(v);
-      if (fld.num && key !== skipKey) { fld.num.value = String(v); invalid[key] = false; }
+      const v = String(shownOf(key));
+      setProp(fld.range, 'value', v);
+      if (fld.num && key !== skipKey) { setProp(fld.num, 'value', v); invalid[key] = false; }
     }
-    const radio = form.querySelector(`input[name="frequency"][value="${state.freq}"]`);
-    if (radio) radio.checked = true;
-    form.querySelectorAll('input[name="unit-income"], input[name="unit-expenses"]').forEach((r) => { r.checked = r.value === state.unit; });
-    el.rateToggle.checked = state.rateOn;
-    el.rateGroup.hidden = !state.rateOn;
+    freqRadios.forEach((r) => { r.checked = r.value === state.freq; });
+    unitRadios.forEach((r) => { r.checked = r.value === state.unit; });
+    setProp(el.rateToggle, 'checked', state.rateOn);
+    setProp(el.rateGroup, 'hidden', !state.rateOn);
   }
 
   /* ===== Застосування значення поля =====
@@ -431,19 +481,19 @@ function createSavingsSim(root) {
     setText(fields.percent.out, `${state.percent}%`);
     setText(fields.years.out, yearsText(state.years));
     setText(fields.rate.out, `${nf1.format(state.rate)}% річних`);
-    fields.income.range.setAttribute('aria-valuetext', `${fmt(incomeShown)} ${hryvnia(incomeShown)} ${unit}`);
-    fields.expenses.range.setAttribute('aria-valuetext', `${fmt(expensesShown)} ${hryvnia(expensesShown)} ${unit}`);
-    fields.percent.range.setAttribute('aria-valuetext', percentWord(state.percent));
-    fields.years.range.setAttribute('aria-valuetext', yearsText(state.years));
-    fields.rate.range.setAttribute('aria-valuetext', `${percentWord(state.rate)} річних`);
+    setAttr(fields.income.range, 'aria-valuetext', `${fmt(incomeShown)} ${hryvnia(incomeShown)} ${unit}`);
+    setAttr(fields.expenses.range, 'aria-valuetext', `${fmt(expensesShown)} ${hryvnia(expensesShown)} ${unit}`);
+    setAttr(fields.percent.range, 'aria-valuetext', percentWord(state.percent));
+    setAttr(fields.years.range, 'aria-valuetext', yearsText(state.years));
+    setAttr(fields.rate.range, 'aria-valuetext', `${percentWord(state.rate)} річних`);
 
     setText(el.freeOut, `${fmtMoney(r.free * f)} ${unit}`);
     setText(el.percentMoney, fmtMoney2(r.monthly));
     setText(el.freqMoney, fmtMoney2(r.deposit));
     setText(el.freqWord, word);
 
-    form.querySelectorAll('[data-chip]').forEach((chip) => {
-      chip.setAttribute('aria-pressed', String(state[chip.dataset.chip] === Number(chip.dataset.value)));
+    chips.forEach((chip) => {
+      setAttr(chip, 'aria-pressed', String(state[chip.dataset.chip] === Number(chip.dataset.value)));
     });
 
     setText(el.total, fmtMoney(r.total));
@@ -461,21 +511,23 @@ function createSavingsSim(root) {
     stepMsg = '';                                  // будь-яка зміна значення знімає підказку про блокування кроку
     refreshGlobalError();
 
+    tableDirty = true;
     if (step === TOTAL_STEPS) renderTable(r);      // таблицю будуємо лише коли її видно
     series = { totals: r.totals, contribs: r.contribs, rateOn: state.rateOn };
     if (hoverIdx > r.totals.length - 1) hoverIdx = -1;
     updateReadout();
-    el.legendContrib.hidden = !state.rateOn;
-    el.canvas.setAttribute('aria-label', r.total > 0
+    setProp(el.legendContrib, 'hidden', !state.rateOn);
+    setAttr(el.canvas, 'aria-label', r.total > 0
       ? `Графік: за ${yearsText(state.years)} накопичиться ${fmtMoney(r.total)}`
       : 'Графік порожній: накопичень немає');
-    scheduleChart();
+    if (step === TOTAL_STEPS) scheduleChart();     // на прихованих кроках графік не малюємо
     updateCtaHref();
   }
 
   function renderTable(r) {
+    tableDirty = false;
     const cols = state.rateOn ? 4 : 3;
-    el.thInterest.hidden = !state.rateOn;
+    setProp(el.thInterest, 'hidden', !state.rateOn);
     const frag = document.createDocumentFragment();
     const addRow = (cells, muted, span) => {
       const tr = document.createElement('tr');
@@ -503,12 +555,37 @@ function createSavingsSim(root) {
   }
 
   /* ===== Графік (canvas, без бібліотек) ===== */
-  const cssVar = (name, fallback) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
   const DEFAULT_READOUT = 'Наведіть курсор або проведіть пальцем по графіку, щоб побачити суму за рік.';
+
+  /* Розміри читаємо лише тут (у колбеку ResizeObserver або при вході на крок 6),
+     а не в кожному кадрі малювання: так немає примусового layout. */
+  function measure() {
+    box = { w: el.chartBox.clientWidth, h: el.chartBox.clientHeight };
+  }
+
+  /* Кольори й шрифт читаємо один раз і скидаємо кеш при зміні теми */
+  function getPalette() {
+    if (palette) return palette;
+    const cs = getComputedStyle(document.documentElement);
+    const read = (name, fallback) => cs.getPropertyValue(name).trim() || fallback;
+    palette = {
+      action: read('--color-action', '#007A52'),
+      ink: read('--color-ink-blue', '#3C5979'),
+      muted: read('--color-muted', '#55637A'),
+      grid: read('--color-line', '#DCE5EB'),
+      font: `12px ${getComputedStyle(document.body).fontFamily}`,
+    };
+    return palette;
+  }
 
   function scheduleChart() {
     if (chartRaf) return;
     chartRaf = window.requestAnimationFrame(() => { chartRaf = 0; drawChart(); });
+  }
+
+  function invalidatePalette() {
+    palette = null;
+    if (step === TOTAL_STEPS) scheduleChart();
   }
 
   function updateReadout() {
@@ -525,10 +602,10 @@ function createSavingsSim(root) {
 
   function drawChart() {
     const { totals, contribs, rateOn } = series;
-    const w = el.chartBox.clientWidth;
-    const h = el.chartBox.clientHeight;
+    const { w, h } = box;
     if (!w || !h) return;                                     // крок прихований
-    const ctx = el.canvas.getContext('2d');
+    if (!ctx2d) ctx2d = el.canvas.getContext('2d');
+    const ctx = ctx2d;
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
     if (lastCanvas.w !== w || lastCanvas.h !== h || lastCanvas.dpr !== dpr) {   // перевиділяємо буфер лише при зміні розміру
@@ -540,11 +617,8 @@ function createSavingsSim(root) {
     ctx.clearRect(0, 0, w, h);
     geom = null;
 
-    const action = cssVar('--color-action', '#007A52');
-    const ink = cssVar('--color-ink-blue', '#3C5979');
-    const muted = cssVar('--color-muted', '#55637A');
-    const grid = cssVar('--color-line', '#DCE5EB');
-    ctx.font = `12px ${getComputedStyle(document.body).fontFamily}`;
+    const { action, ink, muted, grid, font } = getPalette();
+    ctx.font = font;
 
     const maxVal = totals[totals.length - 1];
     if (!(maxVal > 0) || totals.length < 2) {
@@ -640,8 +714,8 @@ function createSavingsSim(root) {
 
   function onHover(e) {
     if (!geom) return;
-    const rect = el.canvas.getBoundingClientRect();
-    const raw = ((e.clientX - rect.left - geom.padL) / geom.plotW) * geom.n;
+    /* offsetX вже відносно canvas: getBoundingClientRect не потрібен */
+    const raw = ((e.offsetX - geom.padL) / geom.plotW) * geom.n;
     const i = Math.min(geom.n, Math.max(0, Math.round(raw)));
     if (i === hoverIdx) return;
     hoverIdx = i;
@@ -659,8 +733,20 @@ function createSavingsSim(root) {
   el.canvas.addEventListener('pointerleave', onLeave, { signal });
   el.canvas.addEventListener('pointercancel', onLeave, { signal });
 
-  if ('ResizeObserver' in window) { ro = new ResizeObserver(scheduleChart); ro.observe(el.chartBox); }
-  else window.addEventListener('resize', scheduleChart, { signal });
+  if ('ResizeObserver' in window) {
+    ro = new ResizeObserver(() => { measure(); scheduleChart(); });   // у колбеку читання розмірів не викликає зайвого layout
+    ro.observe(el.chartBox);
+  } else {
+    window.addEventListener('resize', () => { measure(); scheduleChart(); }, { signal });
+  }
+
+  /* Зміна теми: скидаємо кеш кольорів */
+  const colorScheme = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  if (colorScheme && colorScheme.addEventListener) colorScheme.addEventListener('change', invalidatePalette, { signal });
+  if ('MutationObserver' in window) {
+    mo = new MutationObserver(invalidatePalette);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+  }
 
   /* ===== Вкладки-кроки: наступна відкривається після завершення попередньої ===== */
   const rawOf = (num) => (num.validity && num.validity.badInput ? 'NaN' : num.value);
@@ -709,13 +795,13 @@ function createSavingsSim(root) {
     stepMsg = '';
     actionMsg = '';                                           // стара помилка дії не висить на іншому кроці
     Object.keys(fields).forEach((key) => { if (!invalid[key]) fieldMsgs[key] = ''; });   // застарілі підказки «Ми підставили…» не повертаються
-    if (step === TOTAL_STEPS && lastResult) renderTable(lastResult);
+    if (step === TOTAL_STEPS && lastResult && tableDirty) renderTable(lastResult);       // таблиця лише якщо дані змінились
     refreshGlobalError();
     if (o.focusPanel) {
       panels[step - 1].focus({ preventScroll: true });
       el.wizard.scrollIntoView({ block: 'nearest' });
     }
-    if (step === TOTAL_STEPS) scheduleChart();                // графік не малюється в прихованій панелі
+    if (step === TOTAL_STEPS) { measure(); scheduleChart(); } // графік не малюється в прихованій панелі
   }
 
   /* Перехід на крок k: усі кроки між поточним і k мають бути заповнені коректно. */
@@ -782,20 +868,20 @@ function createSavingsSim(root) {
     }
   });
 
-  form.querySelectorAll('[data-chip]').forEach((chip) => {
+  chips.forEach((chip) => {
     chip.addEventListener('click', () => {
       const key = chip.dataset.chip;
       if (CHIP_KEYS.includes(key)) applyField(key, chip.dataset.value, 'commit');
     }, { signal });
   });
 
-  form.querySelectorAll('input[name="frequency"]').forEach((radio) => {
+  freqRadios.forEach((radio) => {
     radio.addEventListener('change', () => {
       if (PERIODS[radio.value]) { state.freq = radio.value; render(); }
     }, { signal });
   });
 
-  form.querySelectorAll('input[name="unit-income"], input[name="unit-expenses"]').forEach((radio) => {
+  unitRadios.forEach((radio) => {
     radio.addEventListener('change', () => {
       state.unit = radio.value === 'year' ? 'year' : 'month';
       syncControls();
@@ -805,7 +891,7 @@ function createSavingsSim(root) {
 
   el.rateToggle.addEventListener('change', () => {
     state.rateOn = el.rateToggle.checked;
-    el.rateGroup.hidden = !state.rateOn;
+    setProp(el.rateGroup, 'hidden', !state.rateOn);
     render();
   }, { signal });
 
@@ -849,8 +935,10 @@ function createSavingsSim(root) {
   el.reset.addEventListener('click', () => {
     Object.assign(state, DEFAULTS);
     maxStep = 1;
+    Object.keys(fields).forEach((key) => { invalid[key] = false; fieldMsgs[key] = ''; });
     syncControls();
     goTo(1, { focusPanel: true });
+    render();                                                 // оновлюємо результати відповідно до скинутих значень
     setStatus('Налаштування скинуто.');
   }, { signal });
 
@@ -863,12 +951,9 @@ function createSavingsSim(root) {
     if (saved) initial = JSON.parse(saved);
   } catch (_) { /* пропускаємо */ }
 
-  URL_KEYS.forEach((k) => {
-    const val = urlParams.get(P(k));
-    if (val !== null) {
-      const mapKey = k === 'exp' ? 'expenses' : k === 'pct' ? 'percent' : k;
-      initial[mapKey] = val;
-    }
+  Object.entries(URL_MAP).forEach(([param, stateKey]) => {
+    const val = urlParams.get(P(param));
+    if (val !== null) initial[stateKey] = val;
   });
 
   Object.assign(state, sanitize(initial));
@@ -881,6 +966,10 @@ function createSavingsSim(root) {
     destroy() {
       ac.abort();
       if (ro) ro.disconnect();
+      if (mo) mo.disconnect();
+      window.cancelAnimationFrame(chartRaf);
+      chartRaf = 0;
+      window.clearTimeout(statusTimer);
       instances.delete(root);
     }
   };

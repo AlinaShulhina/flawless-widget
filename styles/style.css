@@ -22,6 +22,12 @@
   --color-mint: #E6F5EF;
   --color-danger: #B3261E;
   --color-danger-soft: #FFB4AB;
+
+  /* Додані токени для WCAG AA (наявні значення не змінено) */
+  --color-muted-on-dark: #8A99AE;  /* замість muted на navy/footer: 5.81:1 / 6.24:1 (muted давав 2.77 / 2.97) */
+  --color-danger-on-soft: #9F221B; /* червоний текст на danger-soft: 4.55:1 (danger давав 3.85) */
+  --color-focus: #007A52;          /* контур фокуса на світлому: 5.00:1 на page (brand давав 2.70) */
+
   --font-heading: "Palatino Linotype", "Book Antiqua", Georgia, serif;
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --radius-control: 8px;
@@ -58,8 +64,9 @@
   /* main отримує фокус лише від skip-link: рамка не потрібна */
   main:focus { outline: none; }
 
-  /* Єдиний контур фокуса: action ≥3:1 на світлому, mist на темному */
-  :focus-visible { outline: 3px solid var(--color-action); outline-offset: 3px; }
+  /* Єдиний контур фокуса: focus (=action) ≥3:1 на світлому, mist на темному
+     (mist: 6.22:1 на navy, 6.68:1 на footer) */
+  :focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
   .dark-zone :focus-visible { outline-color: var(--color-mist); }
   ::placeholder { color: var(--color-muted); opacity: 1; }
   .dark-zone ::placeholder { color: rgb(255 255 255 / .75); }
@@ -108,9 +115,10 @@
   .foot-title { @apply font-sans text-lg font-bold text-white; }
   .text-link { @apply font-medium text-action underline hover:text-action-hover; }
 
-  /* Симулятор */
-  .tab { @apply min-h-12 rounded-control border border-line px-2 text-sm font-semibold text-ink-blue transition-colors not-aria-selected:hover:bg-mint aria-selected:border-action aria-selected:bg-action aria-selected:text-white sm:px-3 sm:text-base; }
-  .choice { @apply flex min-h-12 items-center justify-center rounded-control border border-line-strong bg-white font-medium text-navy transition-colors hover:border-action peer-checked:border-action peer-checked:bg-action peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-action; }
+  /* Симулятор.
+     Рамка вкладки line-strong (3.2:1), як в інших елементів керування: line (1.2:1) не відрізняє кнопку від фону. */
+  .tab { @apply min-h-12 rounded-control border border-line-strong px-2 text-sm font-semibold text-ink-blue transition-colors not-aria-selected:hover:bg-mint aria-selected:border-action aria-selected:bg-action aria-selected:text-white sm:px-3 sm:text-base; }
+  .choice { @apply flex min-h-12 items-center justify-center rounded-control border border-line-strong bg-white font-medium text-navy transition-colors hover:border-action peer-checked:border-action peer-checked:bg-action peer-checked:text-white peer-focus-visible:outline-3 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-focus; }
   .slider-head { @apply flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1; }
   .range { @apply mt-2 h-12 w-full accent-action; }
   .out { @apply font-heading text-xl font-bold tabular-nums sm:text-2xl; }
@@ -118,7 +126,7 @@
   /* Форми.
      Колір рамки помилки й успіху ставить validation.js утилітами border-red-500 і
      border-green-600 (утиліти сильніші за цей шар, тому перекривають hover і focus).
-     Тут їх не дублюємо, щоб був один джерело стану. */
+     Тут їх не дублюємо, щоб було одне джерело стану. */
   .field { @apply mt-1 min-h-12 w-full rounded-control border border-line-strong bg-white px-3 text-navy transition-colors hover:border-action focus-visible:border-action; }
   .dark-zone .field { @apply mt-0 bg-navy px-4 text-white; }
   textarea.field { @apply resize-y py-3; }
@@ -128,15 +136,24 @@
   /* Підказки й помилки під полем. Елемент помилки завжди в DOM (live-регіон),
      відступ з'являється лише коли в ньому є текст. */
   .hint { @apply mt-1 text-sm text-muted; }
-  .dark-zone .hint { color: rgb(255 255 255 / .75); }
   .err { @apply text-sm font-medium text-danger; }
   .err:not(:empty) { @apply mt-1; }
-  .dark-zone .err { color: var(--color-danger-soft); }
 
   .status { @apply min-h-6 font-medium text-action; }
   .status[data-state="error"] { color: var(--color-danger); }
-  .dark-zone .status { color: var(--color-mist); }
-  .dark-zone .status[data-state="error"] { color: var(--color-danger-soft); }
+
+  /* Темні поверхні (.dark-zone, .card-dark): кольори світлої теми тут не проходять AA
+     (ink-blue 2.32:1, danger 2.58:1, muted 2.77:1, teal-deep 3.17:1 на navy) */
+  :is(.dark-zone, .card-dark) .label { color: var(--color-page); }
+  :is(.dark-zone, .card-dark) .step-no { color: var(--color-mist); }
+  :is(.dark-zone, .card-dark) .req::after { color: var(--color-danger-soft); }
+  :is(.dark-zone, .card-dark) .hint { color: rgb(255 255 255 / .75); }
+  :is(.dark-zone, .card-dark) .err { color: var(--color-danger-soft); }
+  :is(.dark-zone, .card-dark) .status { color: var(--color-mist); }
+  :is(.dark-zone, .card-dark) .status[data-state="error"] { color: var(--color-danger-soft); }
+
+  /* Плашка помилки: червоний текст на danger-soft лише з danger-on-soft (4.55:1) */
+  .alert-error { @apply rounded-control border border-danger bg-danger-soft px-4 py-3 font-medium text-danger-on-soft; }
 
   /* FAQ */
   .faq { @apply rounded-card border border-line bg-page shadow-card; }
@@ -156,7 +173,7 @@
     .hero { min-height: min(calc(100svh - var(--header-h)), 44rem); }
   }
 
-    /* Відгуки та галерея */
+  /* Відгуки та галерея */
   .slider-btn { @apply hidden size-12 shrink-0 items-center justify-center rounded-full border border-line-strong bg-white text-navy transition-colors hover:border-action hover:text-action disabled:cursor-not-allowed disabled:opacity-40 md:flex; }
   .shot { @apply block overflow-hidden rounded-card border border-line shadow-card; }
   .shot img { @apply aspect-4/3 w-full cursor-zoom-in object-cover transition-transform duration-300 hover:scale-105; }
@@ -180,7 +197,12 @@
   @media (width >= 48rem) { .map__frame { aspect-ratio: 16 / 9; max-height: 70svh; } }
 }
 
-/* ===== Overrides для Swiper (поза @layer, інакше стилі бібліотеки їх перекриють) ===== */
+/* ===== Overrides поза @layer (інакше утиліти Tailwind і стилі бібліотек їх перекриють) ===== */
+
+/* Утиліта text-muted на темних поверхнях: muted-on-dark замість muted (2.77:1 на navy) */
+:is(.dark-zone, .card-dark) .text-muted { color: var(--color-muted-on-dark); }
+
+/* Swiper */
 .reviews .swiper { padding: .25rem .25rem 2.5rem; }
 .reviews .swiper-slide { display: flex; height: auto; }
 
