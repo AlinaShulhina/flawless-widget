@@ -1,22 +1,6 @@
 (() => {
 'use strict';
-/* Симулятор заощаджень: вкладки-кроки, що відкриваються поступово.
-   Vanilla JS, без залежностей.
-   Підключення: <script type="module" src="js/savings.js"></script>
-   (модуль відкладений сам по собі, як defer; для віджета в першому екрані додайте
-   <link rel="modulepreload" href="js/savings.js"> у <head>).
-   Кожен віджет: <section data-savings-sim data-sim-id="..."> (перший ще й data-sync-url).
 
-   Оптимізації:
-   - запис у DOM ідемпотентний (setText / setProp / setAttr, кеш помилок і CTA-посилання);
-   - syncControls не переписує межі й значення, якщо вони не змінилися;
-   - графік не перемальовується на прихованих кроках і не викликає примусових
-     перерахунків layout (розміри з ResizeObserver, палітра кешується, offsetX замість
-     getBoundingClientRect);
-   - таблиця перебудовується лише коли змінилися дані;
-   - destroy() скасовує rAF, таймер і всі спостерігачі. */
-
-/* ===== Константи ===== */
 const STORAGE_PREFIX = 'savingsSim:v2';
 const TOTAL_STEPS = 6;
 const PERIODS = { week: 52, month: 12, quarter: 4, year: 1 };          // внесків на рік
