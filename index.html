@@ -150,11 +150,11 @@
       <form id="sim-form" class="mt-6" novalidate>
 
         <!-- Крок 1. Дохід -->
-        <section id="sim-step-1" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-1">
+        <section id="sim-step-1" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-1" tabindex="0">
           <div id="sim-income-group">
             <div class="slider-head">
               <label id="sim-income-label" class="label" for="sim-income-range">Ваш дохід</label>
-              <output id="sim-income-out" class="out" for="sim-income-range sim-income-number" aria-live="off">40 000 ₴ на місяць</output>
+              <output id="sim-income-out" class="out" for="sim-income-range sim-income-number">40 000 ₴ на місяць</output>
             </div>
             <input id="sim-income-range" class="range" type="range" name="income" min="5000" max="300000" step="500" value="40000"
                    aria-describedby="sim-step-1-desc sim-income-err" aria-valuetext="40 000 гривень на місяць">
@@ -165,7 +165,7 @@
             <label class="label mt-4 block" for="sim-income-number">Або введіть точну суму, ₴</label>
             <input id="sim-income-number" class="field aria-invalid:border-danger! aria-invalid:bg-danger/5 aria-invalid:ring-2 aria-invalid:ring-danger/25 focus:aria-invalid:ring-danger/50" type="number" inputmode="numeric" min="5000" max="300000" step="500" value="40000"
                    aria-describedby="sim-step-1-desc sim-income-err">
-            <div aria-live="polite"><p id="sim-income-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" hidden></p></div>
+            <p id="sim-income-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" aria-live="polite" hidden></p>
             <p id="sim-step-1-desc" class="hint">Середній дохід, який ви отримуєте.</p>
           </div>
 
@@ -185,11 +185,11 @@
         </section>
 
         <!-- Крок 2. Витрати -->
-        <section id="sim-step-2" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-2" hidden>
+        <section id="sim-step-2" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-2" tabindex="0" hidden>
           <div id="sim-expenses-group">
             <div class="slider-head">
               <label id="sim-expenses-label" class="label" for="sim-expenses-range">Ваші витрати</label>
-              <output id="sim-expenses-out" class="out" for="sim-expenses-range sim-expenses-number" aria-live="off">22 000 ₴ на місяць</output>
+              <output id="sim-expenses-out" class="out" for="sim-expenses-range sim-expenses-number">22 000 ₴ на місяць</output>
             </div>
             <input id="sim-expenses-range" class="range" type="range" name="expenses" min="0" max="40000" step="500" value="22000"
                    aria-describedby="sim-step-2-desc sim-expenses-hint sim-expenses-err" aria-valuetext="22 000 гривень на місяць">
@@ -200,7 +200,7 @@
             <label class="label mt-4 block" for="sim-expenses-number">Або введіть точну суму, ₴</label>
             <input id="sim-expenses-number" class="field aria-invalid:border-danger! aria-invalid:bg-danger/5 aria-invalid:ring-2 aria-invalid:ring-danger/25 focus:aria-invalid:ring-danger/50" type="number" inputmode="numeric" min="0" max="40000" step="500" value="22000"
                    aria-describedby="sim-expenses-hint sim-expenses-err">
-            <div aria-live="polite"><p id="sim-expenses-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" hidden></p></div>
+            <p id="sim-expenses-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" aria-live="polite" hidden></p>
             <p id="sim-step-2-desc" class="hint">Житло, їжа, транспорт, підписки та інші регулярні витрати.</p>
             <p id="sim-expenses-hint" class="hint">Вільний залишок: <span id="sim-free-out" class="font-semibold text-navy">18 000 ₴ на місяць</span></p>
           </div>
@@ -222,11 +222,11 @@
         </section>
 
         <!-- Крок 3. Відсоток заощадження -->
-        <section id="sim-step-3" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-3" hidden>
+        <section id="sim-step-3" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-3" tabindex="0" hidden>
           <div id="sim-percent-group">
             <div class="slider-head">
               <label id="sim-percent-label" class="label" for="sim-percent-range">Яку частину залишку відкладати</label>
-              <output id="sim-percent-out" class="out" for="sim-percent-range" aria-live="off">20%</output>
+              <output id="sim-percent-out" class="out" for="sim-percent-range">20%</output>
             </div>
             <input id="sim-percent-range" class="range" type="range" name="percent" min="0" max="100" step="1" value="20"
                    aria-describedby="sim-step-3-desc sim-percent-hint sim-percent-err" aria-valuetext="20 відсотків">
@@ -240,14 +240,14 @@
               <button id="sim-percent-chip-30" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="percent" data-value="30" aria-pressed="false">30%</button>
               <button id="sim-percent-chip-50" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="percent" data-value="50" aria-pressed="false">50%</button>
             </div>
-            <div aria-live="polite"><p id="sim-percent-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" hidden></p></div>
+            <p id="sim-percent-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" aria-live="polite" hidden></p>
             <p id="sim-step-3-desc" class="hint">Відсоток рахується від вільного залишку: дохід мінус витрати. Популярна порада: близько 20%.</p>
             <p id="sim-percent-hint" class="hint">≈ <span id="sim-percent-money" class="font-semibold text-navy">3 600 ₴</span> на місяць</p>
           </div>
         </section>
 
         <!-- Крок 4. Періодичність -->
-        <section id="sim-step-4" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-4" hidden>
+        <section id="sim-step-4" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-4" tabindex="0" hidden>
           <fieldset id="sim-frequency-group" class="min-w-0">
             <legend class="label mb-2">Як часто ви відкладаєте</legend>
             <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -273,11 +273,11 @@
         </section>
 
         <!-- Крок 5. Роки та дохід від відсотків -->
-        <section id="sim-step-5" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-5" hidden>
+        <section id="sim-step-5" class="flex flex-col gap-5 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-5" tabindex="0" hidden>
           <div id="sim-years-group">
             <div class="slider-head">
               <label id="sim-years-label" class="label" for="sim-years-range">Скільки років відкладатимете</label>
-              <output id="sim-years-out" class="out" for="sim-years-range" aria-live="off">10 років</output>
+              <output id="sim-years-out" class="out" for="sim-years-range">10 років</output>
             </div>
             <input id="sim-years-range" class="range" type="range" name="years" min="1" max="40" step="1" value="10"
                    aria-describedby="sim-years-err" aria-valuetext="10 років">
@@ -291,7 +291,7 @@
               <button id="sim-years-chip-20" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="years" data-value="20" aria-pressed="false">20 років</button>
               <button id="sim-years-chip-30" class="btn btn-ghost min-h-10 px-4 text-sm aria-pressed:border-action aria-pressed:bg-action aria-pressed:text-white aria-pressed:hover:bg-action aria-pressed:hover:text-white" type="button" data-chip="years" data-value="30" aria-pressed="false">30 років</button>
             </div>
-            <div aria-live="polite"><p id="sim-years-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" hidden></p></div>
+            <p id="sim-years-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" aria-live="polite" hidden></p>
           </div>
 
           <!-- Необовʼязково: дохід від відсотків на накопичення -->
@@ -305,7 +305,7 @@
             <div id="sim-rate-group" class="mt-4" hidden>
               <div class="slider-head">
                 <label id="sim-rate-label" class="label" for="sim-rate-range">Річна дохідність</label>
-                <output id="sim-rate-out" class="out" for="sim-rate-range" aria-live="off">8% річних</output>
+                <output id="sim-rate-out" class="out" for="sim-rate-range">8% річних</output>
               </div>
               <input id="sim-rate-range" class="range" type="range" name="rate" min="1" max="20" step="0.5" value="8"
                      aria-describedby="sim-rate-desc sim-rate-err" aria-valuetext="8 відсотків річних">
@@ -313,20 +313,20 @@
                 <span id="sim-rate-min">1%</span>
                 <span id="sim-rate-max">20%</span>
               </div>
-              <div aria-live="polite"><p id="sim-rate-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" hidden></p></div>
+              <p id="sim-rate-err" class="mt-2 flex items-start gap-2 text-sm font-medium text-danger [&[hidden]]:hidden before:mt-0.5 before:inline-flex before:size-4 before:shrink-0 before:items-center before:justify-center before:rounded-full before:bg-danger before:text-[11px] before:leading-none before:font-bold before:text-white before:content-['!']" aria-live="polite" hidden></p>
             </div>
           </div>
         </section>
       </form>
 
       <!-- ===== КРОК 6: РЕЗУЛЬТАТ ===== -->
-      <section id="sim-step-6" class="mt-6 flex flex-col gap-6 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-6" hidden>
+      <section id="sim-step-6" class="mt-6 flex flex-col gap-6 [&[hidden]]:hidden" role="tabpanel" aria-labelledby="sim-tab-6" tabindex="0" hidden>
 
         <!-- Підсумок -->
-        <div id="sim-summary" class="card card-dark shadow-none">
+        <section id="sim-summary" class="card card-dark shadow-none" aria-labelledby="sim-summary-title">
           <h3 id="sim-summary-title" class="text-lg text-white">Ви відкладете</h3>
           <p class="mt-2">
-            <output id="sim-total" class="block break-words font-heading text-figure font-bold tabular-nums">432 000 ₴</output>
+            <output id="sim-total" class="block break-words font-heading text-figure font-bold tabular-nums" aria-live="polite">432 000 ₴</output>
           </p>
           <p id="sim-total-note" class="mt-1 text-sm text-white/75">120 внесків за 10 років, відкладаючи щомісяця</p>
 
@@ -348,22 +348,22 @@
               <dd id="sim-stat-share">9%</dd>
             </div>
           </dl>
-        </div>
+        </section>
 
         <!-- Графік і дані -->
-        <div id="sim-viz">
+        <section id="sim-viz" aria-labelledby="sim-viz-title">
           <h3 id="sim-viz-title" class="text-lg">Динаміка накопичень</h3>
           <figure id="sim-chart-figure" class="m-0 mt-3">
             <div id="sim-chart-box" class="relative aspect-4/3 w-full rounded-card border border-line bg-page sm:aspect-video">
-              <canvas id="sim-chart-canvas" class="size-full touch-pan-y" role="img" aria-label="Графік накопичень за роками. Докладні дані є в таблиці нижче.">
+              <canvas id="sim-chart-canvas" class="size-full touch-pan-y" role="img" aria-label="Графік накопичень за роками">
                 Графік недоступний. Відкрийте таблицю по роках нижче.
               </canvas>
             </div>
-            <ul id="sim-chart-legend" role="list" class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
+            <ul id="sim-chart-legend" class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
               <li><span class="mr-2 inline-block h-0.5 w-6 bg-action align-middle"></span>Разом</li>
               <li id="sim-legend-contrib" hidden><span class="mr-2 inline-block w-6 border-t-2 border-dashed border-ink-blue align-middle"></span>Ваші внески</li>
             </ul>
-            <figcaption id="sim-chart-readout" class="hint">Наведіть курсор або проведіть пальцем по графіку, щоб побачити суму за рік. Ті самі дані є в таблиці нижче.</figcaption>
+            <figcaption id="sim-chart-readout" class="hint" aria-live="off">Наведіть курсор або проведіть пальцем по графіку, щоб побачити суму за рік.</figcaption>
           </figure>
 
           <details id="sim-data-details" class="faq mt-4">
@@ -387,7 +387,7 @@
               </table>
             </div>
           </details>
-        </div>
+        </section>
 
         <!-- Дії -->
         <div id="sim-actions" class="flex flex-col gap-3">
@@ -403,8 +403,8 @@
           </div>
 
           <!-- Помилки збереження й поширення (тільки тут) -->
-          <div id="sim-errors" class="flex items-start gap-2 rounded-control border border-danger bg-danger/5 p-3 text-sm font-medium text-danger [&[hidden]]:hidden" role="alert" hidden></div>
-          <p id="sim-status" class="status" role="status"></p>
+          <div id="sim-errors" class="flex items-start gap-2 rounded-control border border-danger bg-danger/5 p-3 text-sm font-medium text-danger [&[hidden]]:hidden" role="alert" aria-live="assertive" hidden></div>
+          <p id="sim-status" class="status" role="status" aria-live="polite"></p>
 
           <a id="sim-cta-plan" class="btn w-full" href="#signup">
             Створити план
@@ -416,7 +416,7 @@
       </section>
 
       <!-- Підказка з поточним результатом (кроки 1–5) -->
-      <p id="sim-preview" class="mt-6 rounded-control bg-mint px-4 py-3 text-sm text-ink-blue">Поки що виходить: 432 000 ₴ за 10 років</p>
+      <p id="sim-preview" class="mt-6 rounded-control bg-mint px-4 py-3 text-sm text-ink-blue" aria-live="off">Поки що виходить: 432 000 ₴ за 10 років</p>
 
       <!-- Навігація між кроками -->
       <div id="sim-nav" class="mt-4 flex flex-wrap items-center gap-3">
@@ -438,7 +438,7 @@
           <h2 id="benefits-title" class="text-h2">Інструменти, що працюють на вашу фінансову свободу</h2>
           <p class="mt-4 text-muted">Ми зібрали інструменти, які допомагають планувати бюджет, відкладати регулярно та бачити результат кожного кроку.</p>
         </div>
-        <ul role="list" class="grid gap-4 sm:grid-cols-2 lg:col-span-3">
+        <ul class="grid gap-4 sm:grid-cols-2 lg:col-span-3">
           <li class="card">
             <span class="icon-tile"><img src="assets/icons/brain.svg" alt="" width="32" height="32" loading="lazy" decoding="async" class="size-8"></span>
             <h3 class="mt-4 text-xl">AI-підказки</h3>
@@ -468,7 +468,7 @@
       <div class="wrap">
         <p class="pill">Процес</p>
         <h2 id="process-title" class="text-center text-h2">Як це працює</h2>
-        <ol role="list" class="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <ol class="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <li class="card card-soft lg:col-span-2">
             <p class="step-no">Крок 1</p>
             <h3 class="mt-2 text-xl">Змоделюйте свій капітал</h3>
@@ -534,7 +534,7 @@
                  srcset="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=500&amp;auto=format&amp;q=70 500w,
                          https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=900&amp;auto=format&amp;q=70 900w"
                  sizes="(min-width: 768px) 33vw, 100vw"
-                 width="500" height="375" loading="lazy" decoding="async" alt="Збільшити: дашборд аналітики та розподілу доходів">
+                 width="500" height="375" loading="lazy" decoding="async" alt="Аналітика доходів">
           </a>
           <a class="shot" href="https://images.unsplash.com/photo-1563986768609-322da13575f3?w=1200"
              data-fancybox="main-gallery" data-caption="Мобільний додаток для обліку витрат на ходу">
@@ -542,7 +542,7 @@
                  srcset="https://images.unsplash.com/photo-1563986768609-322da13575f3?w=500&amp;auto=format&amp;q=70 500w,
                          https://images.unsplash.com/photo-1563986768609-322da13575f3?w=900&amp;auto=format&amp;q=70 900w"
                  sizes="(min-width: 768px) 33vw, 100vw"
-                 width="500" height="375" loading="lazy" decoding="async" alt="Збільшити: мобільний додаток для обліку витрат">
+                 width="500" height="375" loading="lazy" decoding="async" alt="Мобільний додаток">
           </a>
           <a class="shot" href="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=1200"
              data-fancybox="main-gallery" data-caption="Автоматичний розрахунок подушки безпеки">
@@ -550,7 +550,7 @@
                  srcset="https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=500&amp;auto=format&amp;q=70 500w,
                          https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=900&amp;auto=format&amp;q=70 900w"
                  sizes="(min-width: 768px) 33vw, 100vw"
-                 width="500" height="375" loading="lazy" decoding="async" alt="Збільшити: автоматичний розрахунок подушки безпеки">
+                 width="500" height="375" loading="lazy" decoding="async" alt="Подушка безпеки">
           </a>
         </div>
       </div>
@@ -638,10 +638,11 @@
               <div class="swiper-slide">
                 <article class="card flex w-full flex-col hover:border-action">
                   <div class="flex items-center gap-4">
-                    <div class="size-16 shrink-0 rounded-full bg-mint ring-2 ring-mint" aria-hidden="true"></div>
+                    <img src="/assets/avatars/oleksii.jpg" alt="" width="64" height="64" loading="lazy" decoding="async"
+                         class="size-16 shrink-0 rounded-full bg-mint object-cover ring-2 ring-mint">
                     <div class="min-w-0">
                       <h3 class="text-lg text-navy">Олексій Коваленко</h3>
-                      <p class="text-sm text-muted"><span lang="en">UI/UX Designer</span>, Київ</p>
+                      <p class="text-sm text-muted">UI/UX Designer, Київ</p>
                     </div>
                   </div>
                   <p class="mt-5 text-action"><span aria-hidden="true">★★★★★</span><span class="sr-only">Оцінка 5 з 5</span></p>
@@ -652,10 +653,11 @@
               <div class="swiper-slide">
                 <article class="card flex w-full flex-col hover:border-action">
                   <div class="flex items-center gap-4">
-                    <div class="size-16 shrink-0 rounded-full bg-mint ring-2 ring-mint" aria-hidden="true"></div>
+                    <img src="/assets/avatars/mariia.jpg" alt="" width="64" height="64" loading="lazy" decoding="async"
+                         class="size-16 shrink-0 rounded-full bg-mint object-cover ring-2 ring-mint">
                     <div class="min-w-0">
                       <h3 class="text-lg text-navy">Марія Петренко</h3>
-                      <p class="text-sm text-muted"><span lang="en">Copywriter</span>, Львів</p>
+                      <p class="text-sm text-muted">Copywriter, Львів</p>
                     </div>
                   </div>
                   <p class="mt-5 text-action"><span aria-hidden="true">★★★★★</span><span class="sr-only">Оцінка 5 з 5</span></p>
@@ -666,10 +668,11 @@
               <div class="swiper-slide">
                 <article class="card flex w-full flex-col hover:border-action">
                   <div class="flex items-center gap-4">
-                    <div class="size-16 shrink-0 rounded-full bg-mint ring-2 ring-mint" aria-hidden="true"></div>
+                    <img src="/assets/avatars/dmytro.jpg" alt="" width="64" height="64" loading="lazy" decoding="async"
+                         class="size-16 shrink-0 rounded-full bg-mint object-cover ring-2 ring-mint">
                     <div class="min-w-0">
                       <h3 class="text-lg text-navy">Дмитро Шевченко</h3>
-                      <p class="text-sm text-muted"><span lang="en">Frontend Dev</span>, Одеса</p>
+                      <p class="text-sm text-muted">Frontend Dev, Одеса</p>
                     </div>
                   </div>
                   <p class="mt-5 text-action"><span aria-hidden="true">★★★★★</span><span class="sr-only">Оцінка 5 з 5</span></p>
@@ -688,7 +691,7 @@
         <div class="dots swiper-pagination-custom w-full text-center"></div>
 
         <!-- Відгуки, надіслані користувачами -->
-        <ul id="review-list" role="list" class="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3" hidden></ul>
+        <ul id="review-list" class="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3" hidden></ul>
         <p id="review-empty" class="mt-8 text-center text-muted">Відгуків від користувачів поки немає. Станьте першим.</p>
 
         <!-- Форма відгуку -->
@@ -744,7 +747,7 @@
               </div>
 
               <!-- Honeypot: людині не видно й недоступний з клавіатури, боти його заповнюють -->
-              <div class="sr-only" inert>
+              <div class="sr-only" aria-hidden="true">
                 <input type="text" name="contact_pref" tabindex="-1" autocomplete="off">
               </div>
 
@@ -846,7 +849,7 @@
           </div>
 
           <!-- Honeypot: людині не видно й недоступний з клавіатури, боти його заповнюють -->
-          <div class="sr-only" inert>
+          <div class="sr-only" aria-hidden="true">
             <input type="text" name="contact_pref" tabindex="-1" autocomplete="off">
           </div>
 
@@ -914,7 +917,7 @@
             та надаєте згоду на отримання оновлень від нашої компанії.</p>
 
           <!-- Honeypot: людині не видно й недоступний з клавіатури, боти його заповнюють -->
-          <div class="sr-only" inert>
+          <div class="sr-only" aria-hidden="true">
             <input type="text" name="contact_pref" tabindex="-1" autocomplete="off">
           </div>
 
@@ -947,7 +950,7 @@
       <div class="lg:col-span-3">
         <h2 class="foot-title">Слідкуйте за нами</h2>
         <!-- TODO: замініть заглушки на реальні профілі компанії -->
-        <ul role="list" class="mt-4 flex flex-col gap-2">
+        <ul class="mt-4 flex flex-col gap-2">
           <li><a class="foot-link gap-3" href="https://facebook.com"><svg class="ico ico-lg" aria-hidden="true"><use href="#i-facebook"/></svg>Facebook<span class="sr-only"> (зовнішнє посилання)</span></a></li>
           <li><a class="foot-link gap-3" href="https://instagram.com"><svg class="ico ico-lg" aria-hidden="true"><use href="#i-instagram"/></svg>Instagram<span class="sr-only"> (зовнішнє посилання)</span></a></li>
           <li><a class="foot-link gap-3" href="https://x.com"><svg class="ico ico-lg" aria-hidden="true"><use href="#i-x-social"/></svg>X<span class="sr-only"> (колишній Twitter, зовнішнє посилання)</span></a></li>
@@ -960,7 +963,7 @@
     <div class="border-t border-white/15">
       <div class="wrap flex flex-col gap-2 py-6 lg:flex-row lg:items-center lg:justify-between">
         <p>© 2026 Потік монет. Усі права захищені.</p>
-        <ul role="list" class="flex flex-wrap gap-x-6">
+        <ul class="flex flex-wrap gap-x-6">
           <li><a class="foot-link" href="/privacy">Політика конфіденційності</a></li>
           <li><a class="foot-link" href="/terms">Умови надання послуг</a></li>
           <!-- Кнопку «Налаштування cookies» додайте разом із реальним менеджером згоди -->
