@@ -507,14 +507,18 @@
         <h2 id="media-title" class="text-center text-h2">Подивіться сервіс у дії</h2>
         <p class="mx-auto mt-3 max-w-2xl text-center text-muted">Коротке відео про те, як «Потік монет» допомагає планувати заощадження.</p>
         <figure class="video mt-8">
-          <!-- Пропорцію задає лише CSS (.video__frame). Атрибути width/height на iframe не додавайте: height перебиває aspect-ratio -->
-          <iframe class="video__frame"
-                  src="https://www.youtube-nocookie.com/embed/CbJpHvMqnEY?hl=uk&amp;cc_load_policy=1&amp;rel=0"
-                  title="Відео: як працює сервіс «Потік монет»" loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-          <figcaption class="mt-3 text-center text-sm text-muted">Подивіться, як працює сервіс за хвилину.</figcaption>
-        </figure>
+  <div class="video__frame grid place-items-center" data-embed>
+    <button type="button" class="btn" data-embed-load>Відтворити відео</button>
+    <template>
+      <iframe class="size-full rounded-[inherit] border-0"
+              src="https://www.youtube-nocookie.com/embed/CbJpHvMqnEY?hl=uk&amp;cc_load_policy=1&amp;rel=0&amp;autoplay=1"
+              title="Відео: як працює сервіс «Потік монет»"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    </template>
+  </div>
+  <figcaption class="mt-3 text-center text-sm text-muted">Подивіться, як працює сервіс за хвилину.</figcaption>
+</figure>
       </div>
     </section>
 
