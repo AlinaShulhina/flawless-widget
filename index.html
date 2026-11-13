@@ -642,8 +642,7 @@
               <div class="swiper-slide">
                 <article class="card flex w-full flex-col hover:border-action">
                   <div class="flex items-center gap-4">
-                    <img src="/assets/avatars/oleksii.jpg" alt="" width="64" height="64" loading="lazy" decoding="async"
-                         class="size-16 shrink-0 rounded-full bg-mint object-cover ring-2 ring-mint">
+                    <span class="grid size-16 shrink-0 place-items-center rounded-full bg-mint font-heading text-xl font-bold text-action ring-2 ring-mint" aria-hidden="true">ОК</span>
                     <div class="min-w-0">
                       <h3 class="text-lg text-navy">Олексій Коваленко</h3>
                       <p class="text-sm text-muted">UI/UX Designer, Київ</p>
@@ -657,8 +656,7 @@
               <div class="swiper-slide">
                 <article class="card flex w-full flex-col hover:border-action">
                   <div class="flex items-center gap-4">
-                    <img src="/assets/avatars/mariia.jpg" alt="" width="64" height="64" loading="lazy" decoding="async"
-                         class="size-16 shrink-0 rounded-full bg-mint object-cover ring-2 ring-mint">
+                    <span class="grid size-16 shrink-0 place-items-center rounded-full bg-mint font-heading text-xl font-bold text-action ring-2 ring-mint" aria-hidden="true">MP</span>
                     <div class="min-w-0">
                       <h3 class="text-lg text-navy">Марія Петренко</h3>
                       <p class="text-sm text-muted">Copywriter, Львів</p>
@@ -672,8 +670,7 @@
               <div class="swiper-slide">
                 <article class="card flex w-full flex-col hover:border-action">
                   <div class="flex items-center gap-4">
-                    <img src="/assets/avatars/dmytro.jpg" alt="" width="64" height="64" loading="lazy" decoding="async"
-                         class="size-16 shrink-0 rounded-full bg-mint object-cover ring-2 ring-mint">
+                    <span class="grid size-16 shrink-0 place-items-center rounded-full bg-mint font-heading text-xl font-bold text-action ring-2 ring-mint" aria-hidden="true">ДШ</span>
                     <div class="min-w-0">
                       <h3 class="text-lg text-navy">Дмитро Шевченко</h3>
                       <p class="text-sm text-muted">Frontend Dev, Одеса</p>
@@ -872,14 +869,18 @@
         <h2 id="contacts-title" class="text-center text-h2">Де нас знайти</h2>
         <p class="mx-auto mt-3 max-w-2xl text-center text-muted">Напишіть нам або завітайте в офіс. Відповідаємо протягом одного робочого дня.</p>
         <figure class="map mt-8">
-          <!-- TODO: цей embed веде на банкомат ПриватБанку, а не на ваш офіс. Замініть src на карту реального офісу
-               (Google Maps → Поділитися → Вбудувати карту) і синхронізуйте адресу нижче -->
-          <iframe class="map__frame"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d20582.495349762772!2d23.984729244366296!3d49.84599142488702!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x473add78aff992b9%3A0xfd1bd3c868df38e5!2z0JHQsNC90LrQvtC80LDRgiDQn9GA0LjQstCw0YLQkdCw0L3Qug!5e0!3m2!1suk!2sua!4v1792513232625!5m2!1suk!2sua"
-                  title="Інтерактивна карта Google Maps із адресою офісу" loading="lazy"
-                  referrerpolicy="strict-origin-when-cross-origin"></iframe>
-          <figcaption class="sr-only">Карта з адресою офісу</figcaption>
-        </figure>
+  <!-- TODO: цей embed веде на банкомат ПриватБанку, а не на ваш офіс. Замініть src на карту реального офісу -->
+  <div class="map__frame grid place-items-center" data-embed>
+    <button type="button" class="btn" data-embed-load>Показати карту</button>
+    <template>
+      <iframe class="size-full rounded-[inherit] border-0"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d20582.495349762772!2d23.984729244366296!3d49.84599142488702!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x473add78aff992b9%3A0xfd1bd3c868df38e5!2z0JHQsNC90LrQvtC80LDRgiDQn9GA0LjQstCw0YLQkdCw0L3Qug!5e0!3m2!1suk!2sua!4v1792513232625!5m2!1suk!2sua"
+              title="Інтерактивна карта Google Maps із адресою офісу"
+              referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </template>
+  </div>
+  <figcaption class="sr-only">Карта з адресою офісу</figcaption>
+</figure>
         <!-- TODO: замініть адресу, email і телефон на справжні -->
         <address class="mx-auto mt-6 max-w-3xl not-italic md:mt-8">
           <dl class="grid gap-4 text-center sm:grid-cols-3">
